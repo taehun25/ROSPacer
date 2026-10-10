@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CycloneDDS xmlns="https://cdds.io/config">
+  <Domain Id="any">
+    <General>
+      <Interfaces>
+        <NetworkInterface name="wlo1" />
+      </Interfaces>
+      <AllowMulticast>spdp</AllowMulticast>
+      <MaxMessageSize>1472 B</MaxMessageSize>
+      <FragmentSize>1408 B</FragmentSize>
+    </General>
+    <Discovery>
+      <Peers>
+        <Peer Address="192.168.0.4" />
+      </Peers>
+    </Discovery>
+    <Internal>
+      <HeartbeatInterval min="5 ms" max="50 ms" minsched="50 ms">50 ms</HeartbeatInterval>
+      <NackDelay>5 ms</NackDelay>
+      <SocketSendBufferSize min="100000 B" max="100000 B" />
+      <SocketReceiveBufferSize min="1048576 B" max="1048576 B" />
+      <Watermarks>
+        <WhcAdaptive>false</WhcAdaptive>
+        <WhcHigh>11534336 B</WhcHigh>
+        <WhcHighInit>11534336 B</WhcHighInit>
+        <WhcLow>5767168 B</WhcLow>
+      </Watermarks>
+    </Internal>
+  </Domain>
+</CycloneDDS>

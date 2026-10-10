@@ -1,0 +1,47 @@
+[
+  {
+    "file": "cyclonedds-0.10.4.xsd",
+    "source": "https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/0.10.4/etc/cyclonedds.xsd",
+    "sha256": "ce004fcb7a3e7bb06b3becc2a96c18763ce3ee0988f8579b476476375586f4cd"
+  },
+  {
+    "file": "cyclonedds-0.10.5.xsd",
+    "source": "https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/0.10.5/etc/cyclonedds.xsd",
+    "sha256": "95c4b4e02aa0cc518a82d865e23492483792b253d2ff95ba5b70df842ba30746"
+  },
+  {
+    "file": "cyclonedds-LICENSE",
+    "source": "https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/0.10.5/LICENSE",
+    "sha256": "d4486603568510bb9a1e6c5ee239a46ec513de55593e86176ccd81a5fdd3cfa3"
+  },
+  {
+    "file": "cyclonedds-NOTICE.md",
+    "source": "https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/0.10.5/NOTICE.md",
+    "sha256": "870fd13d82a95cd4052de250c08dc20836cbb1bfa49ed901fd23a1c0cb4ae4a8"
+  },
+  {
+    "file": "fastdds-2.6.10-local-validation.xsd",
+    "source": "local documented validation correction of fastdds-2.6.10.xsd; see THIRD_PARTY_NOTICES.md",
+    "sha256": "7fd9c73524ab48131c67d667eea79f6d8a9a61cf5a6ca03cec276f4aa5a7156c"
+  },
+  {
+    "file": "fastdds-2.6.10.xsd",
+    "source": "https://raw.githubusercontent.com/eProsima/Fast-DDS/v2.6.10/resources/xsd/fastRTPS_profiles.xsd",
+    "sha256": "92e54009066d7080c5c50d137fe8a1042f8ab9040c159172e7d3310c4f965232"
+  },
+  {
+    "file": "fastdds-2.6.11.xsd",
+    "source": "https://raw.githubusercontent.com/eProsima/Fast-DDS/v2.6.11/resources/xsd/fastRTPS_profiles.xsd",
+    "sha256": "92e54009066d7080c5c50d137fe8a1042f8ab9040c159172e7d3310c4f965232"
+  },
+  {
+    "file": "fastdds-2.6.9.xsd",
+    "source": "https://raw.githubusercontent.com/eProsima/Fast-DDS/v2.6.9/resources/xsd/fastRTPS_profiles.xsd",
+    "sha256": "92e54009066d7080c5c50d137fe8a1042f8ab9040c159172e7d3310c4f965232"
+  },
+  {
+    "file": "fastdds-LICENSE",
+    "source": "https://raw.githubusercontent.com/eProsima/Fast-DDS/v2.6.10/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  }
+]

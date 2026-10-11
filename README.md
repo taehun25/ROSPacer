@@ -441,6 +441,14 @@ Fast DDS 2.6.x 원본 XSD에는 미정의 `int32`/`uint32`/`uint64` 참조와 us
 
 ## 파일 구조와 개발 계획
 
+2026-10-11부터의 마감별 작업·검증 기준은 [EXECUTION_PLAN.md](EXECUTION_PLAN.md)에 있습니다.
+실험 전 `python tools/lab_preflight.py`로 12/10의 무선 계수기·버전·실행 중인 프로세스·권한을
+읽을 수 있습니다. 설정과 트래픽은 변경하지 않고 양쪽 승인된 결과 경로에 JSON을 저장합니다.
+SR2 관리 PC 주소가 바뀌면 `ROSPACER_SSH_BIND` 환경변수를 지정합니다(기본 `192.168.0.2`).
+`python tools/link_probe.py`는 기존 실험·custom qdisc가 없는지 확인하고 12→10 TCP iperf3
+예비 측정과 ping을 수행합니다. 기본 3회, 각 2초 omit+10초이며 서버는 25초 timeout으로 종료합니다.
+이 결과는 DDS goodput이나 검증된 airtime 모델 교정값으로 취급하지 않습니다.
+
 ```text
 ROSPacer/
 ├── rospacer/

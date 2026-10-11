@@ -74,3 +74,34 @@ Fast DDS 82,094개, Cyclone DDS 34,877개의 qdisc drop을 관측했다.
 
 RP Bench는 ROSPacer 실행에 필수 의존성이 아니다. 현재 도구로 개발 검증을 할 수 있다.
 논문용 반복 실험과 지표 집계를 위해 추후 RP Bench 또는 확장된 별도 측정기를 검토한다.
+
+## 2026-10-11 추가 점검
+
+10/30 Fast/Cyclone 초고, 11/04 학위논문, 11/30 Zenoh 포함 투고를 기준으로
+[EXECUTION_PLAN.md](EXECUTION_PLAN.md)를 작성했다.
+`lab_preflight.py`는 SSH로 점검 코드를 보내므로 최신 코드 배포 전에도 상태를 수집한다.
+추가한 readiness 검사 4개를 포함해 로컬과 12/10 양쪽의 단위·XML 검사 총 13개가 통과했다.
+
+12/10 접속과 SR2 연결을 재확인했다. 양쪽 qdisc는 noqueue이며 점검 시 matching
+Pacer/traffic/iperf 프로세스가 없었다. `runs/preflight_20261011_113828/`에 보고서를 저장했다.
+12번은 root survey도 여전히 비어 있다. Intel debugfs의 fw_system_stats는
+`System stats not supported:99`를 반환했다. fw_rx_stats의 channel_load는 0이며
+active/busy/tx 세 시간 계수기를 대체할 근거를 확보하지 못했다.
+이를 대체 airtime 관측이라고 처리하지 않는다.
+
+이 경로 검토에 사용한 원본은
+[Linux v6.8 iwlwifi debugfs.c](https://github.com/torvalds/linux/blob/v6.8/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c)다.
+일부 장치의 시스템 통계 읽기 기능이 존재하는 것과 현재 펌웨어에서 지원되는 것은 별개다.
+
+양쪽 Fast DDS 버전 차이와 10번 sudo 제한은 유지된다.
+12번 chrony tracking이 첫 점검에서 timeout이었으나 재조회에는 Normal을 반환했다.
+10번은 Not synchronised다. 따라서 현재 E2E 지연값을 계산하지 않는다.
+
+`runs/linkpilot_20261011_114208/`에서 12→10 TCP iperf3 예비 측정을 3회 수행했다.
+각 회 2초 omit 뒤 10초를 측정했으며 receiver 처리량은 89.59, 97.25, 105.92 Mb/s다.
+quiet link 검증과 DDS goodput 측정은 아니며 이 값으로 모델 교정을 완료했다고 주장하지 않는다.
+동일 예비 측정의 ping은 20개 중 19개 수신, RTT min/avg/max=27.986/199.763/1051.614 ms다.
+평균 4ms라는 prototype 입력과 실제 환경의 차이가 크므로 링크 안정성·전원 절약 등을
+먼저 조사하고 교정한다. 원인으로 단정하지 않는다.
+추가 조회에서 양쪽 Wi-Fi power save가 on임을 확인했다. 이번 점검에서는 변경하지 않았다.
+링크 예비 측정은 qdisc/sysctl을 바꾸지 않았고 각 iperf server에는 25초 timeout을 두었다.

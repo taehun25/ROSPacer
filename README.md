@@ -62,14 +62,14 @@ flowchart LR
 ```text
 Wi-Fi 인터페이스
 └── HTB root 7ac0:
-    ├── class 7ac0:10: 지정한 UDP 흐름의 합산 rate/ceil 제한
+    ├── class 7ac0:10: 지정한 RTPS 흐름의 합산 rate/ceil 제한
     │   └── fq 7ac1:: 소켓별 흐름 큐, nopacing
     └── class 7ac0:20: 나머지 트래픽 bypass
 ```
 
 HTB가 합산 송신 상한과 burst를 정하고, 그 아래 fq가 흐름을 나눠 내보냅니다. 현재 fq 자체의 추가 pacing은 끄고 HTB를 상한 제어에 사용합니다. 작은 발견·피드백 흐름이 대용량 흐름 하나 뒤에 계속 갇히는 상황을 줄이는 것이 의도입니다.
 
-현재 분류기는 **지정 peer IPv4 주소로 보내는 UDP 전체와 `239.255.0.1` SPDP multicast**를 제어합니다. SSH/TCP는 bypass합니다. 같은 peer로 보내는 iperf UDP도 포함하므로, 아직 DDS 패킷만 자동 식별하는 분류기는 아닙니다. 정식 경쟁 트래픽 실험 전에 실제 DDS 소켓을 구분하는 작업이 필요합니다.
+현재 분류기는 **지정 peer 또는 `239.255.0.1`로 보내는 UDP 중 페이로드 첫 4바이트가 `RTPS`인 패킷**을 제어합니다. IPv4 헤더 길이 20 B이고 IP fragmentation이 없는 경우에 한정합니다. SSH/TCP와 일반 UDP는 bypass합니다. 특정 ROS 프로세스나 토픽을 식별하는 기능은 아니므로 같은 목적지로 보내는 다른 RTPS 흐름도 포함합니다. IPv6·IP option·IP fragmentation 경로는 현재 분류 범위에 포함하지 않습니다. DDS Security나 VPN·터널 환경의 동작은 검증하지 않았습니다.
 
 ### 고정 모드와 적응형 모드
 
@@ -221,7 +221,9 @@ sudo sysctl -p profiles/cyclonedds12/sysctl.conf > runs/sysctl_apply.log
 sudo sysctl -p runs/sysctl_before.txt > runs/sysctl_restore.log
 ```
 
-커널 상한 변경은 기존 DDS 소켓을 소급해 다시 설정하지 않습니다. 버퍼 적용 후 ROS 프로세스를 시작하고 `ss -u -m` 등으로 실제 소켓 메모리를 확인합니다. Linux 소켓 버퍼 보고값과 요청값의 accounting 차이도 고려해야 합니다. Cyclone DDS는 XML의 최소 버퍼를 확보하지 못하면 시작에 실패할 수 있습니다. 현재 10번 계정은 비밀번호 없는 sudo를 사용할 수 없어 직접 sudo 실행이 필요합니다.
+커널 상한 변경은 기존 DDS 소켓을 소급해 다시 설정하지 않습니다. 버퍼 적용 후 ROS 프로세스를 시작하고 `ss -u -m` 등으로 실제 소켓 메모리를 확인합니다. Linux 소켓 버퍼 보고값과 요청값의 accounting 차이도 고려해야 합니다. Cyclone DDS는 XML의 최소 버퍼를 확보하지 못하면 시작에 실패할 수 있습니다.
+
+현재 실험실 10번의 `csi` 계정에는 `tools/enable_receiver_sudo.sh`로 제한된 비밀번호 없는 sudo를 설정했습니다. 허용 명령은 수신 상한 조회, `rmem_max=1048576` 적용과 `212992` 복원, `wlp2s0`의 survey/station 조회, 권한 확인용 true입니다. 일반 root shell이나 임의 sysctl 명령을 허용하지 않습니다. 이 스크립트는 해당 노트북·계정·작업 경로에 한정되며 최초 실행에는 계정 비밀번호가 필요합니다. `/etc/sudoers.d/rospacer-csi`는 시스템 권한 설정이고, 설정 후보와 결과물은 저장소 아래 `runs/sudo_setup/`에 보관합니다.
 
 ### 5. ROS 환경과 XML 활성화
 
@@ -402,7 +404,7 @@ c_target = alpha × (1-beta_other) / theta
 
 ## 검증 결과와 한계
 
-2026-10-10 기준 검증 기록은 [STATUS.md](STATUS.md)에 있습니다.
+날짜별 실제 검증 기록은 [STATUS.md](STATUS.md)에 있습니다.
 
 | 실제 개발 환경 | 상태 |
 |---|---|
@@ -412,7 +414,7 @@ c_target = alpha × (1-beta_other) / theta
 | 배치 | 12번 Publisher + governor → 10번 Subscriber |
 | 무선 | SR2, channel 36 / 80 MHz |
 
-최종 기능 점검은 Reliable/KEEP_ALL, 1MiB, 1Hz, 샘플 3개, fixed pacing으로 실행했습니다. C=20Mbps는 제어기 개발 입력이며 링크 측정값이 아닙니다. 수신자는 기본 transport를 사용했으므로 **양쪽 Static 최적화의 성능 실험이 아닙니다.**
+초기 기능 점검은 Reliable/KEEP_ALL, 1MiB, 1Hz, 샘플 3개, fixed pacing으로 실행했습니다. C=20Mbps는 제어기 개발 입력이며 링크 측정값이 아닙니다. 수신자는 기본 transport를 사용했으므로 **양쪽 Static 최적화의 성능 실험이 아닙니다.**
 
 | 미들웨어 | 고유 수신 | fq drop | publish 호출 최대 시간 |
 |---|---:|---:|---:|
@@ -420,6 +422,17 @@ c_target = alpha × (1-beta_other) / theta
 | Cyclone DDS | 3/3 | 0 | 498.32 ms |
 
 최초 fq 한도를 `ceil(Qtx/MTU)`의 최소치로만 정했을 때는 많은 qdisc drop과 repair가 발생했습니다. 한도를 늘린 뒤 drop 0과 발행 호출 지연을 관측했습니다. 이는 역압의 초기 증거이며, 샘플 3개 시험으로 전체 전달·안정성·복구 상한이나 최적화 성능을 입증하지 않습니다.
+
+2026-10-11에는 양쪽에 생성 XML과 1 MiB 수신 버퍼 요청을 적용한 짧은 시험을 추가했습니다. 같은 개발 입력 C=20Mbps에서 1MiB/5Hz는 제공 부하가 상한을 넘는 조건입니다. CycloneDDS는 12/12를 수신했지만 실제 발행은 약 2.01Hz로 느려졌고, Fast DDS는 발행 오류와 0/12 수신을 기록했습니다. Fast DDS의 부하를 1Hz로 낮춘 별도 시험에서는 6/6 수신, 실제 발행 약 1.00Hz를 확인했습니다. 재현 반복과 원인 분리가 필요하며, 이 수치를 벤더 간 성능 순위나 최적화 개선률로 사용하지 않습니다. 커널 수신 버퍼 오류가 없는 조건에서도 발행 실패가 가능하므로 버퍼 확대만으로 W1을 해결했다고 보지 않습니다.
+
+`tools/traffic.py`는 요청 샘플·발행 성공/실패·발행 호출 시간·수신 ID를 기록하고 JSONL 이벤트를 즉시 저장합니다. `analyze`는 요청 샘플 기준 전달률과 성공 발행 기준 전달률을 모두 출력하며, 실제 발행률과 도착 간격을 별도로 계산합니다. 성공 발행만 분모로 삼아 제공 부하 감소를 가리는 것을 방지합니다. 시계 동기화가 확인되지 않아 E2E 지연은 계산하지 않습니다.
+
+```bash
+python3 -m rospacer analyze --publisher runs/TRIAL/fastdds_pub.json \
+  --subscriber runs/TRIAL/fastdds_sub.json --out runs/TRIAL/metrics.json
+```
+
+`tools/telemetry.py`는 `ss` 소켓 메모리, 전역 UDP 카운터, qdisc/class 통계와 무선 통계를 JSONL로 수집합니다. 전역 UDP 카운터에는 다른 프로세스의 트래픽도 포함되므로 변화량만으로 DDS의 오류 원인을 확정하지 않습니다. Ubuntu iproute2의 HTB class 출력이 `-j`에도 text인 경우를 처리하고 원문을 보존합니다.
 
 **남은 핵심 검증:** 필수 airtime 통계 확보, 실제 소켓 memory accounting, 장시간 과부하와 발행 timeout, 단절·복구, AP relay 보정, 실제 DDS-only 분류, 양쪽 XML/버퍼 적용, 1:N와 다중 토픽입니다. 비교는 동일한 노트북 쌍에서 Default / Static(XML만) / fixed 개발 점검 / adaptive ROSPacer를 각각 실행해야 합니다.
 
@@ -431,7 +444,7 @@ c_target = alpha × (1-beta_other) / theta
 python3 -m unittest discover -s tests -v
 ```
 
-모델·단위·복구 구간·교정·counter reset·통계 누락 시 시스템 변경 방지·XML 검사 **9개**가 로컬 및 두 Ubuntu 노트북에서 통과했습니다. GitHub Actions는 Ubuntu 22.04/Python 3.10에서 같은 검사를 실행하도록 구성했습니다. CI는 Wi-Fi 하드웨어, 관리자 qdisc 변경, ROS 노드 송수신을 시험하지 않습니다.
+모델·단위·복구 구간·교정·counter reset·통계 누락 시 시스템 변경 방지·XML·준비 상태·발행 실패 지표·HTB class 출력 검사 **19개**가 로컬 및 두 Ubuntu 노트북에서 통과했습니다. GitHub Actions는 Ubuntu 22.04/Python 3.10에서 같은 검사를 실행하도록 구성했습니다. CI는 Wi-Fi 하드웨어, 관리자 qdisc 변경, ROS 노드 송수신을 시험하지 않습니다.
 
 ### 스키마 검증 범위
 
@@ -448,6 +461,8 @@ SR2 관리 PC 주소가 바뀌면 `ROSPACER_SSH_BIND` 환경변수를 지정합�
 `python tools/link_probe.py`는 기존 실험·custom qdisc가 없는지 확인하고 12→10 TCP iperf3
 예비 측정과 ping을 수행합니다. 기본 3회, 각 2초 omit+10초이며 서버는 25초 timeout으로 종료합니다.
 이 결과는 DDS goodput이나 검증된 airtime 모델 교정값으로 취급하지 않습니다.
+
+현재 SR2 전용 `remote_smoke.py --count 12 --hz 5 --paired-static`은 양쪽 XML과 임시 수신 버퍼 상한을 적용해 점검합니다. `--receiver-buffer`만 주면 수신 XML은 기본 상태로 유지하고 커널 상한만 임시 변경합니다. 종료 시 양쪽 상한을 원래 값으로 복원합니다. `classifier_probe.py`는 4Mbps 개발 입력의 fixed governor 아래 같은 peer로 일반 UDP 20Mbps/6초를 보내 분류기 bypass를 점검합니다. 두 helper 모두 실행 중인 기존 시험이나 custom qdisc가 있으면 중단하며, 정식 논문 평가의 반복 실험을 대신하지 않습니다.
 
 ```text
 ROSPacer/

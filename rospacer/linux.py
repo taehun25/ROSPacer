@@ -1,5 +1,6 @@
 """Linux observations and owned, reversible HTB/fq lifecycle."""
 import csv
+import ipaddress
 import json
 import math
 import os
@@ -93,6 +94,26 @@ def doctor(dev):
     return report
 
 
+def parse_class_stats(raw):
+    """Some Ubuntu iproute2 builds ignore -j for HTB classes; retain raw evidence."""
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        value = None
+    if isinstance(value, list):
+        return value
+    result = []
+    for block in re.split(r"(?=^class )", raw, flags=re.MULTILINE):
+        name = re.match(r"class \S+ (\S+)", block)
+        counters = re.search(r"Sent (\d+) bytes (\d+) pkt \(dropped (\d+),", block)
+        if name and counters:
+            result.append(dict(handle=name[1], bytes=int(counters[1]),
+                               packets=int(counters[2]), drops=int(counters[3]), raw=block.strip()))
+    if not result and raw.strip():
+        raise RuntimeError("unrecognised tc class statistics; raw data must be inspected")
+    return result
+
+
 class Shaper:
     HANDLE = "7ac0:"
     CLASS = "7ac0:10"
@@ -117,6 +138,12 @@ class Shaper:
         mtu = int(Path(f'/sys/class/net/{self.dev}/mtu').read_text())
         if mtu != self.cfg["mtu"]:
             raise RuntimeError("device MTU differs from operating-point MTU")
+        if self.cfg["unit_bytes"] > mtu-28:
+            raise RuntimeError("RTPS classifier requires unfragmented IPv4 UDP")
+        destinations = list(dict.fromkeys([*self.cfg["peers"], "239.255.0.1"]))
+        for dst in destinations:
+            if ipaddress.ip_address(dst).version != 4:
+                raise ValueError("RTPS classifier requires IPv4 peers")
         self.tc("qdisc", "add", "dev", self.dev, "root", "handle", self.HANDLE,
                 "htb", "default", "20")
         self.owned = True
@@ -128,10 +155,15 @@ class Shaper:
             self.tc("qdisc", "add", "dev", self.dev, "parent", self.CLASS,
                     "handle", "7ac1:", "fq", "limit", self.cfg["fq_limit"],
                     "flow_limit", self.cfg["fq_flow_limit"], "nopacing")
-            for i, dst in enumerate([*self.cfg["peers"], "239.255.0.1"]):
+            for i, dst in enumerate(destinations):
                 self.tc("filter", "add", "dev", self.dev, "parent", self.HANDLE,
                         "protocol", "ip", "prio", i+1, "u32", "match", "ip", "protocol",
                         "17", "0xff", "match", "ip", "dst", dst+"/32",
+                        # IPv4 IHL=5; no MF/fragment offset; UDP payload at 28.
+                        # RTPS magic selects DDS without shaping competing UDP.
+                        "match", "u8", "0x45", "0xff", "at", "0",
+                        "match", "u16", "0x0000", "0x3fff", "at", "6",
+                        "match", "u32", "0x52545053", "0xffffffff", "at", "28",
                         "flowid", self.CLASS)
         except Exception:
             self.close()
@@ -146,6 +178,10 @@ class Shaper:
 
     def stats(self):
         return self.tc("-j", "-s", "qdisc", "show", "dev", self.dev).stdout.strip()
+
+    def class_stats(self):
+        raw = self.tc("-j", "-s", "class", "show", "dev", self.dev).stdout.strip()
+        return json.dumps(parse_class_stats(raw))
 
     def close(self):
         if self.owned:
@@ -182,7 +218,7 @@ def govern(cfg, mode, seconds, trace, dry_run=False):
         shaper.install()
         with open(trace, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=["monotonic_s", "mode", "status", "cap_packet_Bps",
-                                    "beta", "theta", "relay_s", "qdisc_json", "error"])
+                                    "beta", "theta", "relay_s", "qdisc_json", "class_json", "error"])
             writer.writeheader()
             old = initial
             while time.monotonic() < deadline:
@@ -201,6 +237,7 @@ def govern(cfg, mode, seconds, trace, dry_run=False):
                         row.update(status="hold", error=str(exc))
                     old = new
                 row["qdisc_json"] = shaper.stats()
+                row["class_json"] = shaper.class_stats()
                 writer.writerow(row)
                 f.flush()
                 time.sleep(max(0, min(.2-(time.monotonic()-tick), deadline-time.monotonic())))

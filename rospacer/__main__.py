@@ -54,6 +54,10 @@ def main():
     cal.add_argument("--relay-in-survey", choices=("yes", "no"), required=True)
     restore_cmd = sub.add_parser("restore")
     restore_cmd.add_argument("--dev", required=True)
+    analyze = sub.add_parser("analyze", help="paired smoke logs; no cross-host latency")
+    analyze.add_argument("--publisher", required=True)
+    analyze.add_argument("--subscriber", required=True)
+    analyze.add_argument("--out", required=True)
     args = parser.parse_args()
     if args.command == "plan":
         for address in (args.address, *args.peer):
@@ -68,7 +72,8 @@ def main():
                          quantity(args.tau, "time"), args.alpha, header=args.header, intent=args.intent)
         cfg.update(dev=args.dev, peers=args.peer, middleware=args.rmw,
                    interval_s=.2, relay_in_survey=None, airtime_overhead_s=None,
-                   scope="IPv4 UDP to peer(s) and SPDP multicast; includes other UDP to these peers")
+                   classifier="rtps_ipv4_no_options",
+                   scope="RTPS UDP to peer(s) and SPDP multicast; IPv4 IHL=5, no IP fragmentation")
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
         if args.rmw == "fastdds":
@@ -115,6 +120,12 @@ def main():
         if not re.fullmatch(r"[A-Za-z0-9_.:-]+", args.dev):
             raise ValueError("invalid interface name")
         print(json.dumps(restore(args.dev)))
+    elif args.command == "analyze":
+        from .metrics import analyze_pair
+        result = analyze_pair(json.loads(Path(args.publisher).read_text()),
+                              json.loads(Path(args.subscriber).read_text()))
+        json_write(args.out, result)
+        print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# 2026-10-10 구현 및 검증 기록
+# ROSPacer 구현 및 날짜별 검증 기록
 
 ROSPacer 0.1 초기 구현이다. proposal IV의 정적 설정 생성, HTB+fq 송신 제어,
 sender 통계 수집 및 적응식 계산을 구현했다. 적응형 Wi-Fi 성능 검증은 완료하지 않았다.
@@ -64,11 +64,10 @@ Fast DDS 82,094개, Cyclone DDS 34,877개의 qdisc drop을 관측했다.
    W1 역압 경로를 장시간·과부하·단절에서 검증한다. Fast DDS blocking timeout도 처리해야 한다.
 3. 12/10에서 C0, RTT, PHY rate, retry 및 relay 포함 여부를 식별하고 RTPS overhead를 캡처한다.
    초기 설정 생성기의 임시 C/o 값은 성능 평가에 그대로 쓰지 않는다.
-4. 10번 sudo를 사용해 필요한 수신 버퍼를 적용하고 실제 SO_RCVBUF 및 XML 적용을 확인한다.
-   현재 csi 계정의 sudo -n은 비밀번호를 요구한다.
-5. 실제 DDS 소켓만 분류하도록 traffic classifier를 검증한다.
-   현재는 peer 방향의 IPv4 UDP 전체와 SPDP를 제어하므로 같은 peer의 iperf UDP까지 포함한다.
-   정식 경쟁 트래픽 실험 전에 이를 해결해야 한다.
+4. 양쪽 XML·수신 버퍼 요청을 적용하는 경로와 제한된 10번 sudo는 10/11 추가 점검에서 확인했다.
+   실제 socket accounting·버퍼 운영점의 최적성·오류 원인 분리는 계속 검증한다.
+5. RTPS signature 분류기는 10/11 추가 점검에서 일반 UDP bypass를 확인했다.
+   정확한 프로세스·토픽별 식별, 다른 DDS 흐름·단절·1:N에서의 경로는 별도 검증한다.
 6. Default / Static / ROSPacer 비교는 같은 12/10 쌍에서 진행한다.
    adaptive 검증 후 1:N·다중 토픽·golden profile·자동 측정·Zenoh를 확장한다.
 
@@ -93,7 +92,7 @@ active/busy/tx 세 시간 계수기를 대체할 근거를 확보하지 못했�
 [Linux v6.8 iwlwifi debugfs.c](https://github.com/torvalds/linux/blob/v6.8/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c)다.
 일부 장치의 시스템 통계 읽기 기능이 존재하는 것과 현재 펌웨어에서 지원되는 것은 별개다.
 
-양쪽 Fast DDS 버전 차이와 10번 sudo 제한은 유지된다.
+이 예비 점검 시 양쪽 Fast DDS 버전 차이와 10번 sudo 제한은 유지됐다.
 12번 chrony tracking이 첫 점검에서 timeout이었으나 재조회에는 Normal을 반환했다.
 10번은 Not synchronised다. 따라서 현재 E2E 지연값을 계산하지 않는다.
 
@@ -105,3 +104,54 @@ quiet link 검증과 DDS goodput 측정은 아니며 이 값으로 모델 교정
 먼저 조사하고 교정한다. 원인으로 단정하지 않는다.
 추가 조회에서 양쪽 Wi-Fi power save가 on임을 확인했다. 이번 점검에서는 변경하지 않았다.
 링크 예비 측정은 qdisc/sysctl을 바꾸지 않았고 각 iperf server에는 25초 timeout을 두었다.
+
+## 2026-10-11 W1 지표·분류기·수신 설정 점검
+
+두 노트북에 발행 실패를 보존하는 JSONL 로그, 요청 샘플 기준 지표 계산기,
+ss/UDP/qdisc/class/driver telemetry를 배치했다. 단위·XML·준비 상태·지표·class 출력
+검사 총 19개가 로컬과 12/10에서 통과했다. Ubuntu tc의 HTB class가 `-j`에도
+text를 반환하는 것을 확인해 text parser를 추가하고 원문을 보관했다.
+
+10번은 이미 sudo 그룹이었다. 사용자 실행으로 `tools/enable_receiver_sudo.sh`의
+제한된 정책을 설치한 뒤 `sudo -n`의 지정된 rmem_max 및 iw 명령을 확인했다.
+처음 후보 문법은 12번 visudo에서 검사했고, 설치 스크립트는 10번에서도 후보 및
+전체 sudoers 문법을 확인한다. 정책은 rmem_max 1048576/212992와 조회 명령에 한정한다.
+10번 root survey도 여전히 빈 출력이다. 관리자 권한 확보가 airtime 통계 지원을 만들지는 않는다.
+
+모든 아래 DDS 시험은 Reliable/KEEP_ALL, payload 1MiB, 개발 입력 C=20Mbps,
+fixed HTB+fq다. 이 C는 실측 교정값이 아니며, adaptive 제어 시험이 아니다.
+요청 5Hz는 응용 부하 약 41.94Mbps로 개발 상한보다 크다.
+
+| 결과 폴더 | 미들웨어·수신 transport | 요청 Hz | 실제 발행 Hz | 발행 성공 / 요청 | 수신 / 요청 | 10번 UDP RcvbufErrors 증가 |
+|---|---|---:|---:|---:|---:|---:|
+| smoke_20261011_210701 | Fast DDS, 수신 기본 | 5 | 2.09 | 3/12 | 3/12 | 312 |
+| smoke_20261011_211449 | Cyclone DDS, 수신 기본 | 5 | 1.72 | 12/12 | 12/12 | 38 |
+| smoke_20261011_212630 | Fast DDS, 양쪽 XML | 5 | 2.17 | 2/12 | 0/12 | 0 |
+| smoke_20261011_212630 | Cyclone DDS, 양쪽 XML | 5 | 2.01 | 12/12 | 12/12 | 0 |
+| smoke_20261011_212934 | Fast DDS, 양쪽 XML | 1 | 1.00 | 6/6 | 6/6 | 0 |
+
+Fast DDS의 두 5Hz 시험은 `RCLError: Failed to publish: cannot publish data`로 종료했다.
+실패까지의 짧은 구간에서 계산한 실제 Hz이며 안정 처리량을 나타내지 않는다.
+수신자 기본 조건의 성공 발행 기준 전달률 3/3=100%와 요청 기준 3/12=25%를 함께
+보존한다. Cyclone도 12/12라는 수치만으로 요청 5Hz를 유지했다고 해석하지 않는다.
+전역 UDP 카운터 변화에는 다른 프로세스가 포함될 수 있고, 발행 오류 원인은 아직 확정하지 않았다.
+수신 XML·커널 상한·부하 등 조건과 시간이 다르므로 위 표를 개선률이나 벤더 순위로 사용하지 않는다.
+
+양쪽 XML 시험에서 ROS python3 소켓의 ss skmem rb2097152와 tb131072를 확인했다.
+이는 요청한 1MiB/64KiB와 Linux accounting 값의 차이를 보여 주며,
+실제 available queue 용량이나 메시지 보관량이 정확히 그 값이라는 주장은 아니다.
+양쪽 XML 시험의 qdisc drop 최대값은 0이다. 종료 후 양쪽 rmem_max는 원래 212992로,
+12번 root qdisc는 noqueue로 복원했다. 시계 미동기화로 E2E latency는 계산하지 않았다.
+
+분류기를 IPv4 IHL=5, IP 조각 없음, UDP 페이로드 `RTPS` magic match로 변경했다.
+지정 peer와 SPDP 목적지의 RTPS는 7ac0:10으로, 나머지는 7ac0:20으로 보낸다.
+양쪽 XML Cyclone 시험의 RTPS class 누적 최대값은 14,273,062 B이며
+원문은 governor CSV의 class_json에 있다. DDS 프로세스·토픽별 분류는 아니다.
+
+`runs/classifier_20261011_213052/`에서 4Mbps 개발 입력의 fixed governor를 실행하고
+같은 peer로 일반 UDP 20Mbps/6초를 송신했다. RTPS class 최대 0 B,
+bypass class 최대 15,445,152 B로 일반 UDP bypass를 확인했다.
+iperf3 3.9의 server end summary는 interval에서 byte 수신이 있는데도 bytes=0을
+기록했으므로 여기서 수신 goodput을 인용하지 않는다. 원본 client/server JSON을 보존했다.
+시험 후 noqueue 복원, sysctl 미변경을 확인했다. 일반 UDP 한 종류에 대한 점검이며
+모든 UDP·터널·보안 RTPS 경로를 검증한 것은 아니다.

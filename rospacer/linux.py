@@ -197,6 +197,8 @@ class Shaper:
 def govern(cfg, mode, seconds, trace, dry_run=False):
     if not math.isfinite(seconds) or seconds <= 0:
         raise ValueError("finite positive duration required")
+    if not isinstance(cfg.get("cap_packet_Bps"), (int, float)) or cfg["cap_packet_Bps"] <= 0:
+        raise ValueError("govern requires a measured plan with a positive cap; golden is uncalibrated")
     if mode == "adaptive":
         if cfg.get("relay_in_survey") is None or cfg.get("airtime_overhead_s") is None:
             raise ValueError("adaptive requires calibrated O and explicit relay_in_survey")

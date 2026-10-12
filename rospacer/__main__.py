@@ -7,7 +7,7 @@ import sys
 import time
 
 from . import __version__
-from .model import quantity, synthesize, identify_overhead
+from .model import quantity, synthesize, identify_overhead, golden_profile
 from . import profiles
 
 
@@ -31,6 +31,13 @@ def main():
     plan.add_argument("--alpha", type=float, default=.9)
     plan.add_argument("--header", type=int, default=64, help="provisional RTPS overhead, bytes")
     plan.add_argument("--intent", choices=("complete", "latest"), default="complete")
+    golden = sub.add_parser("golden", help="uncalibrated deployment defaults; no inferred capacity")
+    golden.add_argument("--rmw", choices=("fastdds", "cyclonedds"), required=True)
+    golden.add_argument("--payload", default="1MiB")
+    golden.add_argument("--intent", choices=("complete", "latest"), default="complete")
+    for name in ("out", "dev", "address"):
+        golden.add_argument("--"+name, required=True)
+    golden.add_argument("--peer", action="append", required=True)
     for name in ("doctor", "probe"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--dev", required=True)
@@ -59,17 +66,17 @@ def main():
     analyze.add_argument("--subscriber", required=True)
     analyze.add_argument("--out", required=True)
     args = parser.parse_args()
-    if args.command == "plan":
+    if args.command in ("plan", "golden"):
         for address in (args.address, *args.peer):
             if ipaddress.ip_address(address).version != 4:
                 raise ValueError("IPv4 required in prototype")
-        if args.readers != len(set(args.peer)):
+        if args.command == "plan" and args.readers != len(set(args.peer)):
             raise ValueError("--readers must equal unique --peer addresses for this single-topic prototype")
         if not re.fullmatch(r"[A-Za-z0-9_.:-]+", args.dev):
             raise ValueError("invalid interface name")
         cfg = synthesize(quantity(args.payload, "bytes"), args.rate, args.readers,
                          quantity(args.share, "rate"), quantity(args.rtt, "time"),
-                         quantity(args.tau, "time"), args.alpha, header=args.header, intent=args.intent)
+                         quantity(args.tau, "time"), args.alpha, header=args.header, intent=args.intent) if args.command == "plan" else golden_profile(quantity(args.payload, "bytes"), args.intent)
         cfg.update(dev=args.dev, peers=args.peer, middleware=args.rmw,
                    interval_s=.2, relay_in_survey=None, airtime_overhead_s=None,
                    classifier="rtps_ipv4_no_options",

@@ -3,13 +3,22 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from rospacer.model import synthesize, quantity, adaptive_rate, identify_overhead
+from rospacer.model import synthesize, quantity, adaptive_rate, identify_overhead, golden_profile
 from rospacer.profiles import fastdds, cyclone, validate
 from rospacer.linux import deltas
 from rospacer.linux import govern
 
 
 class OperatingPoints(unittest.TestCase):
+    def test_uncalibrated_golden_never_enables_governor(self):
+        cfg = golden_profile()
+        self.assertIsNone(cfg['capacity_Bps'])
+        self.assertFalse(cfg['feasible_recovery'])
+        with patch('rospacer.linux.Shaper') as shaper:
+            with self.assertRaisesRegex(ValueError, 'golden is uncalibrated'):
+                govern(cfg, 'fixed', 1, 'unused.csv')
+            shaper.assert_not_called()
+
     def test_recovery_budget_with_paced_cap(self):
         p = synthesize(1048576, 10, 1, 25000000, .004, 1)
         # Proposal's 13 MiB example exceeds tau*(0.9C-L).

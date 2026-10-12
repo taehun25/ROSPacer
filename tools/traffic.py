@@ -4,7 +4,11 @@ Sequence IDs check delivery. Unsynchronised clocks never produce E2E latency.
 """
 import argparse
 from array import array
+import hashlib
 import json
+import math
+import os
+import random
 from pathlib import Path
 import struct
 import time
@@ -25,8 +29,12 @@ def main():
     p.add_argument("--intent", choices=("complete", "latest"), default="complete")
     p.add_argument("--topic", default="/rospacer_smoke")
     p.add_argument("--min-readers", type=int, default=1)
+    p.add_argument("--discovery-seconds", type=float, default=10)
+    p.add_argument("--drain-seconds", type=float, default=3)
+    p.add_argument("--continue-on-publish-error", action="store_true")
+    p.add_argument("--pattern", choices=("random", "zeros"), default="random")
     a = p.parse_args()
-    if a.bytes < 16 or a.hz <= 0 or a.count < 1 or a.seconds <= 0 or a.min_readers < 1:
+    if a.bytes < 16 or a.count < 1 or a.min_readers < 1 or not all(math.isfinite(v) and v > 0 for v in (a.hz,a.seconds,a.discovery_seconds)) or not math.isfinite(a.drain_seconds) or a.drain_seconds < 0:
         p.error("invalid traffic parameters")
     rclpy.init()
     try:
@@ -49,16 +57,31 @@ def main():
         events.write(json.dumps(row)+"\n")
         events.flush()
     end = time.monotonic()+a.seconds
+    measurement_started_ns = None
+    measurement_ended_ns = None
+    publisher_errors = []
+    def save_metadata():
+        libs = sorted({line.split()[-1] for line in Path('/proc/self/maps').read_text().splitlines()
+            if line.split()[-1].startswith('/') and any(k in line for k in
+            ('libfastrtps', 'libfastcdr', 'librmw_fastrtps', 'libddsc', 'librmw_cyclonedds'))})
+        metadata = dict(pid=os.getpid(), rmw=os.environ.get('RMW_IMPLEMENTATION'),
+            qos=str(endpoint.qos_profile), libraries={lib:hashlib.sha256(Path(lib).read_bytes()).hexdigest() for lib in libs},
+            environment={k:os.environ.get(k) for k in ('CYCLONEDDS_URI','FASTRTPS_DEFAULT_PROFILES_FILE','RMW_FASTRTPS_USE_QOS_FROM_XML','ROS_DOMAIN_ID','LD_LIBRARY_PATH')})
+        Path(a.out).with_suffix('.metadata.json').write_text(json.dumps(metadata,indent=2))
     endpoint = None
     try:
         if a.role == "pub":
             endpoint = node.create_publisher(UInt8MultiArray, a.topic, qos)
-            while endpoint.get_subscription_count() < a.min_readers and time.monotonic() < end:
+            save_metadata()
+            discovery_end = time.monotonic()+a.discovery_seconds
+            while endpoint.get_subscription_count() < a.min_readers and time.monotonic() < discovery_end:
                 rclpy.spin_once(node, timeout_sec=.1)
             if endpoint.get_subscription_count() < a.min_readers:
                 raise RuntimeError("insufficient matched subscribers before deadline")
             msg = UInt8MultiArray()
-            msg.data = array('B', bytes(a.bytes))
+            msg.data = array('B', random.Random(0).randbytes(a.bytes) if a.pattern == 'random' else bytes(a.bytes))
+            end = time.monotonic()+a.seconds
+            measurement_started_ns = time.monotonic_ns()
             due = time.monotonic()
             for seq in range(a.count):
                 if time.monotonic() >= end:
@@ -71,33 +94,39 @@ def main():
                     record(dict(seq=seq, publish_start_ns=before, publish_succeeded=False,
                                 publish_duration_ms=(time.monotonic_ns()-before)/1e6,
                                 error=f"{type(exc).__name__}: {exc}"))
-                    raise
-                after = time.monotonic_ns()
-                record(dict(seq=seq, publish_start_ns=before, publish_succeeded=True,
-                                 publish_duration_ms=(after-before)/1e6))
+                    publisher_errors.append(f"{type(exc).__name__}: {exc}")
+                    if not a.continue_on_publish_error:
+                        raise
+                else:
+                    after = time.monotonic_ns()
+                    record(dict(seq=seq, publish_start_ns=before, publish_succeeded=True,
+                                     publish_duration_ms=(after-before)/1e6))
                 due += 1/a.hz
                 rclpy.spin_once(node, timeout_sec=0)
                 time.sleep(max(0, min(due-time.monotonic(), end-time.monotonic())))
             # Keep reliable writer alive to allow outstanding acknowledgements.
-            drain = min(end, time.monotonic()+3)
+            measurement_ended_ns = time.monotonic_ns()
+            drain = time.monotonic()+a.drain_seconds
             while time.monotonic() < drain:
                 rclpy.spin_once(node, timeout_sec=.05)
         else:
             def receive(msg):
                 nonlocal duplicates
                 now = time.monotonic_ns()
+                wall = time.time_ns()
                 if len(msg.data) != a.bytes:
                     record(dict(error="unexpected payload size", bytes=len(msg.data)))
                     return
                 seq, publisher_wall = struct.unpack("!QQ", bytes(msg.data[:16]))
                 duplicates += int(seq in ids)
                 ids.add(seq)
-                record(dict(seq=seq, arrival_monotonic_ns=now, publisher_wall_ns=publisher_wall))
+                record(dict(seq=seq, arrival_monotonic_ns=now, arrival_wall_ns=wall, publisher_wall_ns=publisher_wall))
             endpoint = node.create_subscription(UInt8MultiArray, a.topic, receive, qos)
+            save_metadata()
             while len(ids) < a.count and time.monotonic() < end:
                 rclpy.spin_once(node, timeout_sec=.1)
         completed = len(rows) >= a.count if a.role == "pub" else len(ids) >= a.count
-        exit_reason = "completed" if completed else "deadline"
+        exit_reason = "completed_with_publish_errors" if completed and publisher_errors else "completed" if completed else "deadline_with_publish_errors" if publisher_errors else "deadline"
     except Exception as exc:
         error, exit_reason = f"{type(exc).__name__}: {exc}", "error"
     except KeyboardInterrupt:
@@ -107,6 +136,8 @@ def main():
         Path(a.out).write_text(json.dumps(dict(role=a.role, requested=a.count,
             payload_bytes=a.bytes, requested_hz=a.hz, intent=a.intent, topic=a.topic,
             started_monotonic_ns=started, ended_monotonic_ns=time.monotonic_ns(),
+            measurement_started_ns=measurement_started_ns, measurement_ended_ns=measurement_ended_ns,
+            measurement_target_s=a.seconds, publisher_errors=publisher_errors, pattern=a.pattern,
             attempted=sum("publish_succeeded" in row for row in rows),
             succeeded=sum(row.get("publish_succeeded", False) for row in rows),
             error=error, exit_reason=exit_reason,

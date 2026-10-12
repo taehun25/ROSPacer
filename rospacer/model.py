@@ -79,6 +79,22 @@ def identify_overhead(capacity, tx_rate, rx_rate, retries, unit, header):
     return o
 
 
+def golden_profile(payload=1048576, intent="complete"):
+    """An uncalibrated deployment profile; never invent a link capacity or cap."""
+    if payload <= 0 or intent not in ("complete", "latest"):
+        raise ValueError("invalid golden profile")
+    samples = 8 if intent == "complete" else 1
+    return dict(profile_kind="golden_uncalibrated", payload_bytes=int(payload),
+        intent=intent, unit_bytes=1472, header_bytes=64, feedback_s=.05,
+        socket_tx_bytes=65536, socket_rx_bytes=max(1048576, int(payload)),
+        cache_samples=samples, cache_bytes=int(samples*payload),
+        capacity_Bps=None, cap_application_Bps=None, cap_packet_Bps=None,
+        feasible_recovery=False,
+        qualifications=["No measured link input: no throughput or bounded recovery guarantee.",
+                        "Fixed deployment defaults must be validated on the target devices.",
+                        "Generate a measured plan before starting the pacing governor."])
+
+
 def adaptive_rate(cfg, delta, relay_in_survey):
     elapsed = delta["elapsed_s"]
     busy, own = delta["busy_s"], delta["tx_s"]

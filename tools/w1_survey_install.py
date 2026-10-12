@@ -39,6 +39,30 @@ def record(folder, name, value):
     os.chmod(path,0o644)
 
 
+def wait_for_interface(timeout=20):
+    start = time.monotonic()
+    last = {}
+    while time.monotonic()-start < timeout:
+        last['iw'] = command(['iw','dev','wlp2s0','info'],5)
+        last['nm'] = command(['nmcli','-g','GENERAL.DEVICE,GENERAL.STATE','device','show','wlp2s0'],5)
+        lines = last['nm']['stdout'].splitlines()
+        code = int(lines[1].split()[0]) if len(lines)>1 and lines[1].split()[0].isdigit() else 0
+        # NM knows the interface before its supplicant is ready. Allow stable
+        # disconnected, connected, or failed states; don't interrupt activation.
+        if last['iw']['rc'] == 0 and last['nm']['rc'] == 0 and lines[0] == 'wlp2s0' and code in (30,100,120):
+            return {'rc':0,'seconds':time.monotonic()-start,'last':last}
+        time.sleep(.5)
+    return {'rc':124,'seconds':time.monotonic()-start,'last':last}
+
+
+def reconnect(uuid):
+    q = command(['iw','dev','wlp2s0','link'])
+    active = command(['nmcli','-g','GENERAL.CON-UUID','device','show','wlp2s0'])
+    if q['rc'] == 0 and 'SSID: iptime5GAX1500\n' in q['stdout'] and active['rc'] == 0 and active['stdout'].strip() == uuid:
+        return {'rc':0,'stdout':'NetworkManager automatically restored the original connection.\n','stderr':''}
+    return command(['nmcli','--wait','25','connection','up','uuid',uuid,'ifname','wlp2s0'])
+
+
 def rollback(config):
     result = {'unload':command(['modprobe','-r','mt7921e'])}
     target = Path(config['override'])
@@ -55,7 +79,8 @@ def rollback(config):
         target.rmdir()
     result['depmod'] = command(['depmod','-a',config['kernel']])
     result['load_stock'] = command(['modprobe','mt7921e'])
-    result['reconnect'] = command(['nmcli','--wait','25','connection','up','uuid',config['uuid'],'ifname','wlp2s0'])
+    result['interface_ready'] = wait_for_interface()
+    result['reconnect'] = reconnect(config['uuid'])
     result['link'] = command(['iw','dev','wlp2s0','link'])
     result['stock_path'] = command(['modinfo','-n','mt7921e'])
     return result
@@ -70,7 +95,7 @@ def begin(folder):
     if cert != ROOT/'MOK.der' or digest(cert) != signed['certificate_sha256']:
         raise ValueError('certificate mismatch')
     q = command(['mokutil','--test-key',str(cert)])
-    if q['rc'] or not (' is already enrolled' in q['stdout'] or ' is enrolled' in q['stdout']):
+    if q['rc'] not in (0, 1) or not (' is already enrolled' in q['stdout'] or ' is enrolled' in q['stdout']):
         raise ValueError('operator MOK enrollment is required: '+q['stdout'])
     q = command(['pgrep','-af',r'[r]un_campaign|[r]un_sweep|[i]perf3|[t]raffic.py'])
     if q['rc'] != 1:
@@ -144,7 +169,10 @@ def guard(cfg):
         result['load'] = command(['modprobe','mt7921e'])
         if result['load']['rc']:
             raise RuntimeError('signed replacement could not be loaded')
-        result['reconnect'] = command(['nmcli','--wait','25','connection','up','uuid',config['uuid'],'ifname','wlp2s0'])
+        result['interface_ready'] = wait_for_interface()
+        if result['interface_ready']['rc']:
+            raise RuntimeError('interface did not become ready after driver reload')
+        result['reconnect'] = reconnect(config['uuid'])
         if result['reconnect']['rc']:
             raise RuntimeError('reconnect failed')
         result['link'] = command(['iw','dev','wlp2s0','link'])

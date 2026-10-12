@@ -46,7 +46,9 @@ def main():
             raise ValueError('APT SHA256 mismatch: '+name)
     # Every dependency was resolved in the recorded APT plan; install exactly
     # the five verified local packages without a network fetch or upgrade.
-    run(['sudo','-n','dpkg','--install']+[str(p) for p in packages], 180)
+    q = subprocess.run(['dpkg-query','-W','-f=${Version}\n','cpp-12','gcc-12','libasan8','libgcc-12-dev','libtsan2'],capture_output=True,text=True)
+    if q.returncode or q.stdout.splitlines() != ['12.3.0-1ubuntu1~22.04.3']*5:
+        run(['sudo','-n','dpkg','--install']+[str(p) for p in packages], 180)
     start = time.monotonic()
     run(['make','-C','/lib/modules/'+kernel+'/build','M='+str(source),'CC=gcc-12','-j4','modules'], 240)
     wanted = ['mt76.ko','mt76-connac-lib.ko','mt792x-lib.ko','mt7921/mt7921-common.ko','mt7921/mt7921e.ko']

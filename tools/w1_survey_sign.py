@@ -61,8 +61,9 @@ def main():
                                 'signature_id':run(['modinfo','-F','sig_id',str(path)])}
     env = dict(os.environ, LC_ALL='C')
     q = subprocess.run(['mokutil','--test-key',str(cert)],capture_output=True,text=True,timeout=10,env=env)
-    # This installed mokutil returns zero even for "is not enrolled".
-    result['enrolled'] = q.returncode == 0 and (' is already enrolled' in q.stdout or ' is enrolled' in q.stdout)
+    # This mokutil returns 0 for absent and 1 for present; check its explicit
+    # result instead of treating the return code as conventional success.
+    result['enrolled'] = q.returncode in (0, 1) and (' is already enrolled' in q.stdout or ' is enrolled' in q.stdout)
     result['enrollment_check'] = {'rc':q.returncode,'stdout':q.stdout,'stderr':q.stderr}
     (folder/'sign_result.json').write_text(json.dumps(result,indent=2))
     os.chmod(folder/'sign_result.json',0o644)

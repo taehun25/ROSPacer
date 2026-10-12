@@ -14,6 +14,20 @@ SPEC.loader.exec_module(INSTALL)
 
 
 class SurveyInstallSafety(unittest.TestCase):
+    def test_async_interface_probe_waits_for_network_manager(self):
+        replies = [
+            {'rc':237,'stdout':'','stderr':'no device'},
+            {'rc':10,'stdout':'','stderr':'not ready'},
+            {'rc':0,'stdout':'Interface wlp2s0\n','stderr':''},
+            {'rc':0,'stdout':'wlp2s0\n20 (unavailable)\n','stderr':''},
+            {'rc':0,'stdout':'Interface wlp2s0\n','stderr':''},
+            {'rc':0,'stdout':'wlp2s0\n100 (connected)\n','stderr':''}]
+        with patch.object(INSTALL,'command',side_effect=replies) as command, patch.object(INSTALL.time,'sleep') as sleep:
+            result = INSTALL.wait_for_interface()
+            self.assertEqual(result['rc'],0)
+            self.assertEqual(command.call_count,6)
+            self.assertEqual(sleep.call_count,2)
+
     def test_mokutil_zero_with_not_enrolled_refuses_install(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -36,6 +50,23 @@ class SurveyInstallSafety(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'running kernel'):
                     INSTALL.begin(root)
                 command.assert_not_called()
+
+    def test_mokutil_one_with_already_enrolled_proceeds_to_preflight(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cert = root/'MOK.der'
+            cert.write_bytes(b'public certificate')
+            (root/'sign_result.json').write_text(json.dumps({
+                'kernel':'6.8.0-138-generic', 'certificate_path':str(cert),
+                'certificate_sha256':hashlib.sha256(cert.read_bytes()).hexdigest()}))
+            responses = [
+                {'rc':1,'stdout':str(cert)+' is already enrolled\n','stderr':''},
+                {'rc':1,'stdout':'','stderr':''},
+                {'rc':2,'stdout':'','stderr':'stop at link preflight'}]
+            with patch.object(INSTALL,'ROOT',root), patch.object(INSTALL.os,'uname',return_value=SimpleNamespace(release='6.8.0-138-generic'),create=True), patch.object(INSTALL,'command',side_effect=responses) as command:
+                with self.assertRaisesRegex(RuntimeError,'stop at link preflight'):
+                    INSTALL.begin(root)
+                self.assertEqual(command.call_count,3)
 
     def test_changed_module_rolls_back_before_unloading(self):
         with tempfile.TemporaryDirectory() as tmp:

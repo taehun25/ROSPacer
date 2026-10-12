@@ -37,6 +37,9 @@ def main():
         folder.mkdir(parents=True, exist_ok=False)
         (folder/'original.json').write_text(json.dumps({'uuid': uuid, 'link': link}, indent=2))
         uid, gid = int(os.environ.get('SUDO_UID', 0)), int(os.environ.get('SUDO_GID', 0))
+        if folder.name != 'ap_migration':
+            raise RuntimeError('dedicated ap_migration folder required')
+        os.chown(folder.parent, uid, gid)
         os.chown(folder, uid, gid)
         q = subprocess.Popen(['python3', str(Path(__file__).resolve()), 'switch', '--folder', str(folder)],
                              stdin=subprocess.DEVNULL, stdout=open(folder/'guard.log', 'w'),

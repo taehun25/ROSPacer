@@ -58,6 +58,9 @@ def main():
             buffered_rows.append((r['name'], num(r.get('receiver_bps', 0)/1e6), delta))
         body += '<section><h2>별도 1 MiB 소켓 교정</h2>'+table(['조건', '수신 payload Mb/s', '10번 UdpRcvbufErrors 증가'], buffered_rows)+'<p>iperf -w1048576을 명시하고 커널 상한을 임시로 1 MiB로 올렸다. 기존 C2/B2의 기본 버퍼 조건과 구분한다. 이 결과가 모든 조건의 무선 몫 또는 무손실 보장 전송률이라는 주장은 하지 않는다. 커널 상한 복원 영수증은 buffer_calibration_restoration.json에 보관했다.</p></section>'
     body += '<section><h2>C2 · 동일 AP 경쟁 트래픽</h2>'+table(['조건', '12→10 수신 Mb/s', '5→4 요청 Mb/s'], [(r['trial'], num(r['receiver_bps']/1e6), num(r['contender_requested_bps']/1e6)) for r in c2])+'<p>4/5는 SR2에 연결하고 5→4에 0.9C0 UDP 부하를 넣는다. 무선 시간 계수기 결측으로 모델 추정 몫과 20% 오차 기준은 판정하지 못한다.</p></section>'
+    wifi = read(BASE/'wifi_probe/summary.json', [])
+    if wifi:
+        body += '<section><h2>실제 Wi-Fi · HTB 200 Mb/s</h2>'+table(['조건', 'UDP 수신 payload Mb/s', 'HTB class 정상 구간 Mb/s', 'fq drop 최대', '종료 root'], [(r['name'], num(r['C_receiver_Mbps']), num(r.get('class_steady_Mbps')), r.get('fq_drop_max'), ','.join(q['kind'] for q in r['root_after'])) for r in wifi])+'<p>각10초, 명시1 MiB 소켓의 별도 진단이다. baseline이200 Mb/s를 넘고, HTB class의 byte 증가율로 상한을 확인한다. payload 수신률은 IP/UDP·링크 헤더 등으로 class 전송률보다 작다. 한 번의 단기 관측이며 모든 조건의 상한 정확도 또는 DDS 역압 의미론을 입증하지 않는다. 커널 상한은 진단 종료 후 복원한다.</p></section>'
     body += '<section><h2>B2 · 별도 AP의 같은 채널 트래픽</h2>'+table(['조건', '12→10 수신 Mb/s', '동시에 진행한 성공 burst 수', '대략적 시각 대응 오차(s)'], [(r['trial'], num(r['receiver_bps']/1e6 if r.get('receiver_bps') else None), r.get('successful_contender_bursts_overlapping_call', '집계 대기'), num(r.get('campaign_clock_mapping_uncertainty_s'))) for r in trials])
     body += '<p>5→4 UDP b=0을 요청2초 전송·종료 뒤2초 휴지로 반복한다. iperf 시작 협상 및 실제 전송 길이는 burst별 interval JSON과 단조 시각 로그로 검증한다. 관리 PC는 AX1500에서 유한 시간 작업을 준비하고 SR2로 복귀한 뒤 본 링크를 측정한다. 측정 중 AP 간 제어 트래픽을 반복하지 않는다. 각 burst 및 전체 작업 모두 종료 시간 제한이 있다.</p>'
     if b2:

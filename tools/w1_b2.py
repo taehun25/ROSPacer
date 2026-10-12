@@ -155,6 +155,13 @@ def main():
                 raise RuntimeError("additional pair must be idle on AX1500 channel149")
             inventories[host] = r
         (out/"additional_pair.json").write_text(json.dumps(inventories, indent=2))
+        # The migration guard may have created this artifact parent as root.
+        # Limit ownership repair to the dedicated run directory on each host.
+        for host, account in [("4", "csilab"), ("5", "csi")]:
+            folder = "/home/"+account+"/"+REMOTE+"/runs/"+a.run
+            q = c.extra(host, shlex.join(["sudo", "-n", "chown", account+":"+account, folder]))
+            if q.returncode:
+                raise RuntimeError(q.stderr.decode())
         q = c.extra("5", "python3 -c "+shlex.quote("import sys;from pathlib import Path;p=Path("+repr(worker_path)+");p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(sys.stdin.buffer.read())"), (ROOT/"tools/w1_b2_worker.py").read_bytes())
         if q.returncode:
             raise RuntimeError(q.stderr.decode())

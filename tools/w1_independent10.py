@@ -18,22 +18,34 @@ def ten(code):
 
 
 def main():
-    run='w1_20261012_radio45';remote10='/home/csi/'+REMOTE+'/runs/'+run+'/independent10'
-    ready=ten('import json;from pathlib import Path;p=Path('+repr(remote10+'/air.state.json')+');print(json.dumps(json.loads(p.read_text()) if p.exists() else {}))')
-    if not ready.get('waiting_for_start') or ready.get('monitor_removed'):raise RuntimeError('operator capture is not ready; no measurement started')
-    a=argparse.Namespace(run=run,ip4='192.168.0.4',ip5='192.168.0.5',ssid=OTHER);pair=Pair(a,'independent10_main');results={}
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--capture-label',default='independent10')
+    parser.add_argument('--main-label',default='independent10_main')
+    parser.add_argument('--prepared',action='store_true')
+    args=parser.parse_args()
+    for label in (args.capture_label,args.main_label):
+        if not label.replace('_','').isalnum():raise ValueError('invalid label')
+    run='w1_20261012_radio45';remote10='/home/csi/'+REMOTE+'/runs/'+run+'/'+args.capture_label
+    a=argparse.Namespace(run=run,ip4='192.168.0.4',ip5='192.168.0.5',ssid=OTHER);pair=Pair(a,args.main_label);results={}
     try:
         pair.c.connect(OTHER)
         # Reestablish a fresh bounded preparation, irrespective of phase2 expiry.
-        for h,home in pair.home.items():
+        for h,home in ([] if args.prepared else pair.home.items()):
             folder=home+'/'+REMOTE+'/runs/'+run
             q=pair.c.extra(h,'sudo -n python3 '+home+'/'+REMOTE+'/tools/w1_session.py end --folder '+folder+'/session_phase2 --dev wlp2s0');assert q.returncode==0,q.stderr
-        time.sleep(3)
-        for h,home in pair.home.items():
+        if not args.prepared:time.sleep(3)
+        for h,home in ([] if args.prepared else pair.home.items()):
             folder=home+'/'+REMOTE+'/runs/'+run+'/session_independent10'
             q=pair.c.extra(h,'sudo -n python3 '+home+'/'+REMOTE+'/tools/w1_session.py begin --folder '+folder+' --dev wlp2s0');assert q.returncode==0,q.stderr
             q=pair.c.extra(h,'sudo -n sysctl -w net.core.rmem_max=1048576 net.core.wmem_max=1048576');assert q.returncode==0,q.stderr
         pair.check();pair.c.connect(SR2)
+        print('READY_FOR_OPERATOR: main pair prepared; controller will immediately arm the fresh capture',flush=True)
+        deadline=time.monotonic()+600
+        while True:
+            ready=ten('import json;from pathlib import Path;p=Path('+repr(remote10+'/air.state.json')+');print(json.dumps(json.loads(p.read_text()) if p.exists() else {}))')
+            if ready.get('waiting_for_start') and not ready.get('monitor_removed'):break
+            if time.monotonic()>deadline:raise RuntimeError('operator preparation timeout; no reference traffic started')
+            time.sleep(2)
         anchor=ten('import time,json;print(json.dumps({"wall_ns":time.time_ns(),"monotonic_s":time.monotonic()}))')
         ten('from pathlib import Path;Path('+repr(remote10+'/air.start')+').write_text("start authorised paired measurement");print("{}")')
         pair.c.connect(OTHER)
@@ -48,7 +60,7 @@ def main():
             code+='print(json.dumps(r))';q=pair.c.extra('4','sudo -n python3 -',code.encode());assert q.returncode==0,q.stderr;r=json.loads(q.stdout);results[name]=r;(pair.out/(name+'.json')).write_bytes(q.stdout);print(json.dumps({'phase':name,'delta':r['delta']}),flush=True)
         pair.c.connect(SR2)
         ten("import json,time;from pathlib import Path;p=Path("+repr(remote10+'/air.state.json')+");end=time.monotonic()+20\nwhile not json.loads(p.read_text()).get('monitor_removed') and time.monotonic()<end:time.sleep(.5)\nassert json.loads(p.read_text()).get('monitor_removed'),'capture guard not finished';print('{}')")
-        out=ROOT/'runs'/run/'independent10';out.mkdir(exist_ok=True)
+        out=ROOT/'runs'/run/args.capture_label;out.mkdir(exist_ok=True)
         for name in ['air.pcap','air.pcap.capture.log','air.state.json']:
             q=ssh('10','cat '+remote10+'/'+name);assert q.returncode==0,q.stderr;(out/name).write_bytes(q.stdout)
         fields=ten("import subprocess,json;q=subprocess.run(['tshark','-G','fields'],capture_output=True,text=True,timeout=15);selected=[s for s in q.stdout.splitlines() if any(k in s for k in ['radiotap.he.','radiotap.ampdu.reference','wlan_radio.duration','wlan_radio.data_rate','wlan.qos.amsdupresent'])];print(json.dumps({'rc':q.returncode,'fields':selected}))")

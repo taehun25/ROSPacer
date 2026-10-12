@@ -70,11 +70,12 @@ def cyclone(cfg, path, dev, peer):
     child(child(general, "Interfaces"), "NetworkInterface", name=dev)
     child(general, "AllowMulticast", "spdp")
     child(general, "MaxMessageSize", f'{cfg["unit_bytes"]} B')
-    # W1 UInt8MultiArray captures: the first fragment carries INFO_TS and
-    # needs68 bytes of RTPS framing. A64-byte reserve emitted1476-byte UDP
-    # payloads despite MaxMessageSize1472 and bypassed the unfragmented filter.
-    # Preserve larger caller-provided reserves for other types/configurations.
-    cfg["fragment_bytes"] = cfg["unit_bytes"]-max(68,cfg["header_bytes"])
+    # W1 captures found68-byte initial framing and72-byte directed repair
+    # framing (INFO_DST). Reserve84 to cover RTPS20 + INFO_TS12 + INFO_DST16
+    # + DATA_FRAG36 together. MaxMessageSize alone does not constrain a first
+    # oversized submessage in Cyclone0.10.5 q_xmsg.c. Keep4-byte alignment and
+    # honour larger caller budgets for other types/configurations.
+    cfg["fragment_bytes"] = (cfg["unit_bytes"]-max(84,cfg["header_bytes"]))//4*4
     child(general, "FragmentSize", f'{cfg["fragment_bytes"]} B')
     peers = child(child(domain, "Discovery"), "Peers")
     for address in ([peer] if isinstance(peer, str) else peer):

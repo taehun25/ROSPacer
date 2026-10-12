@@ -83,6 +83,20 @@ class OperatingPoints(unittest.TestCase):
             cyclone(cfg, path, "wlo1", "192.168.0.4")
             self.assertTrue(validate(path, schema))
 
+    def test_cyclone_fragment_budget_covers_directed_repair(self):
+        import xml.etree.ElementTree as E
+        for overhead in [64, 128]:
+            cfg = synthesize(1048576, 10, 1, 25000000, .004, 1, header=overhead)
+            with tempfile.TemporaryDirectory() as d:
+                path = Path(d)/"cyclone.xml"
+                cyclone(cfg, path, "wlo1", "192.168.0.4")
+                text = E.parse(path).find('.//{https://cdds.io/config}FragmentSize').text
+                fragment = int(text.split()[0])
+                # IPv4+UDP28, RTPS20, INFO_TS12, INFO_DST16, DATA_FRAG36.
+                # Initial-only68-byte framing missed the directed repair path.
+                self.assertLessEqual(fragment + max(overhead, 20+12+16+36) + 28, cfg['mtu'])
+                self.assertEqual(fragment % 4, 0)
+
     def test_fastdds_locally_corrected_schema(self):
         cfg = synthesize(1048576, 10, 1, 25000000, .004, 1)
         schema = Path(__file__).resolve().parents[1]/"reference/fastdds-2.6.10-local-validation.xsd"

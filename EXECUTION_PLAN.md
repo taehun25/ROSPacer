@@ -41,8 +41,9 @@ run 수·시간 예산은 예비 실험의 실제 실행 시간을 보고 산정
 ## 구현 완료를 판정할 기준
 
 1. **정적 설정:** Fast/Cyclone XML을 생성·검증하고 양쪽 실제 런타임이 적용하는지 확인한다.
-   Cyclone FragmentSize는 MaxMessageSize와 별개로 기록한다. 현재 prototype의 1408 B를
-   4/5 sweep의 1344 B와 혼동하지 않는다. sweep 결과와 캡처로 후보를 결정한다.
+   Cyclone FragmentSize는 MaxMessageSize와 별개로 기록한다. W1 초기/재전송 캡처에서
+   1408/1404 B의 IP 단편화를 확인해 현재는 헤더 여유84 B의 1388 B로 생성한다.
+   4/5 sweep의 1344 B와 혼동하지 않는다. 초기 DATA_FRAG뿐 아니라 재전송도 캡처한다.
 2. **고정 페이싱:** HTB 상한·fq 큐를 설치·복원하고, 실제 송신율·qdisc drop·publish 대기를 확인한다.
    생성된 c와 실제 유효 전송률을 구분하고 헤더·제어·repair 바이트를 계상한다.
 3. **적응형 제어:** 실제 관측값에서 식 (7)을 계산하고 변하는 링크 몫에 대응한다.

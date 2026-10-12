@@ -68,7 +68,7 @@ def analyze_telemetry(path):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');p.add_argument('--outage-seconds',type=float,default=0);p.add_argument('--calibration-label',default='calibration_ready');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');p.add_argument('--outage-seconds',type=float,default=0);p.add_argument('--calibration-label',default='calibration_ready');p.add_argument('--capture',action='store_true');a=p.parse_args()
     if a.outage_seconds and (a.mode!='smoke' or a.only_label not in ('static','fixed') or not 0<a.outage_seconds<=10):p.error('outage requires smoke static/fixed and <=10seconds')
     base=ROOT/'runs'/a.run
     if Path(a.calibration_label).name!=a.calibration_label:p.error('single calibration folder name required')
@@ -152,9 +152,9 @@ def main():
                 b=HOMES['12']+'/'+REMOTE+'/runs/'+a.run+'/'+name
                 pids['govern']=launch('12',['sudo','-n','timeout','-k','3','52','python3','-m','rospacer','govern','--mode','fixed','--seconds','47','--config',b+'/config.json','--trace',b+'/govern.csv'],HOMES['12']+'/'+REMOTE,b+'/govern.log')['pid']
                 time.sleep(.7)
-            if a.mode=='smoke':
+            if a.mode=='smoke' or a.capture:
                 b=HOMES['12']+'/'+REMOTE+'/runs/'+a.run+'/'+name
-                pids['capture']=launch('12',['sudo','-n','timeout','-s','INT','-k','3','40','tcpdump','-i','wlo1','-s','192','-w',b+'/data.pcap','dst','192.168.0.4','and','not','port','22'],HOMES['12']+'/'+REMOTE,b+'/capture.log')['pid']
+                pids['capture']=launch('12',['sudo','-n','timeout','-s','INT','-k','3','40' if a.mode=='smoke' else '15','tcpdump','-i','wlo1','-s','192','-w',b+'/data.pcap','dst','192.168.0.4','and','not','port','22'],HOMES['12']+'/'+REMOTE,b+'/capture.log')['pid']
             b=HOMES['10']+'/'+REMOTE+'/runs/'+a.run+'/'+name
             env=setup(rmw,'10')
             if label=='vendor' and rmw=='fastdds':env+='export FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA; '

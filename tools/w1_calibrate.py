@@ -18,7 +18,8 @@ def launch(host,argv,cwd,log):
     return remote(host,'import subprocess,json\np=subprocess.Popen('+repr(argv)+',cwd='+repr(cwd)+',stdin=subprocess.DEVNULL,stdout=open('+repr(log)+',"w"),stderr=subprocess.STDOUT,start_new_session=True)\nprint(json.dumps({"pid":p.pid}))')
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--label',default='calibration_ready');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--label',default='calibration_ready');p.add_argument('--socket-bytes',type=int);a=p.parse_args()
+    if a.socket_bytes is not None and not 65536<=a.socket_bytes<=16777216:p.error('socket-bytes requires65536..16777216')
     local=ROOT/'runs'/a.run/a.label;local.mkdir(parents=True,exist_ok=True)
     homes={'12':'/home/csi2','10':'/home/csi'}
     bases={h:homes[h]+'/'+REMOTE+'/runs/'+a.run+'/'+a.label for h in homes}
@@ -36,6 +37,7 @@ def main():
         time.sleep(.5)
         argv=['iperf3','-c','192.168.0.4','-B','192.168.0.3','-p','55231','-t','30','-J']
         if udp:argv+=['-u','-b','0','-l','1400']
+        if a.socket_bytes:argv+=['-w',str(a.socket_bytes)]
         result=remote('12','import subprocess,json,time\nq=subprocess.run('+repr(argv)+',capture_output=True,text=True,timeout=36)\nfrom pathlib import Path\nr={"rc":q.returncode,"stdout":q.stdout,"stderr":q.stderr};Path('+repr(bases['12']+'/'+name+'_client.json')+').write_text(json.dumps(r));print(json.dumps(r))')
         (local/(name+'_client.json')).write_text(json.dumps(result,indent=2),encoding='utf-8')
         trial['client_rc']=result['rc']
@@ -61,6 +63,7 @@ def main():
     (local/'ping.json').write_text(json.dumps(ping,indent=2))
     rates=[t['receiver_bps'] for t in trials[:3] if t.get('receiver_bps')]
     summary={'trials':trials,'ping':ping,'C0_UDP_receiver_median_bps':statistics.median(rates) if len(rates)==3 else None,
+      'socket_bytes_requested':a.socket_bytes,
       'C0_definition':'median of three receiver interval-byte rates; iperf3 UDP 1400B/30s; includes loss; application UDP payload, not DDS goodput',
       'quiet_link_control':'No intentional interference; survey missing so external occupancy not verified','adaptive_calibration_complete':False}
     (local/'summary.json').write_text(json.dumps(summary,indent=2))

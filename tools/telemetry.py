@@ -35,7 +35,8 @@ def main():
             for label, argv in (
                 ("qdisc", ["tc", "-j", "-s", "qdisc", "show", "dev", a.dev]),
                 ("classes", ["tc", "-j", "-s", "class", "show", "dev", a.dev]),
-                ("sockets", ["ss", "-u", "-a", "-m", "-n", "-p"])):
+                ("sockets", ["ss", "-u", "-a", "-m", "-n", "-p"]),
+                ("tcp_sockets", ["ss", "-t", "-a", "-m", "-n", "-p"])):
                 q = run(argv)
                 row[label] = dict(exit_code=q.returncode, stdout=q.stdout, stderr=q.stderr)
             row["wireless"] = observe(a.dev)

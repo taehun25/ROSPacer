@@ -99,10 +99,8 @@ def main():
             local.mkdir(parents=True,exist_ok=True)
             shaped=a.mode=='backpressure' or label=='fixed'
             profiled=label not in ['default','vendor']
-            # Vendor here is explicitly UDP buffer tuning supported in 2.6.11,
-            # not the unsupported LARGE_DATA environment mode from newer releases.
             if label=='vendor':
-                cfg['socket_tx_bytes']=1048576;cfg['socket_rx_bytes']=4194304
+                cfg['socket_tx_bytes']=1048576;cfg['socket_rx_bytes']=4194304 if rmw=='fastdds' else 10485760
             for h in HOMES:
                 remote_base=HOMES[h]+'/'+REMOTE+'/runs/'+a.run+'/'+name
                 remote(h,'from pathlib import Path;import json;Path('+repr(remote_base)+').mkdir(parents=True,exist_ok=True);print("{}")')
@@ -112,7 +110,8 @@ def main():
                     if rmw=='fastdds':profiles.fastdds(cfg,profile,IPS[h])
                     else:profiles.cyclone(cfg,profile,DEVS[h],IPS['10' if h=='12' else '12'])
                     if label=='vendor':
-                        # Keep native fragmentation/heartbeat/history behavior for vendor buffer-only arm.
+                        # Vendor retains native timing/history; Fast DDS uses its
+                        # supported LARGE_DATA built-ins, Cyclone enlarged sockets.
                         import xml.etree.ElementTree as E
                         tree=E.parse(profile);root=tree.getroot()
                         if rmw=='fastdds':
@@ -120,9 +119,11 @@ def main():
                             coll=root.find('d:profiles',ns)
                             for endpoint in list(coll):
                                 if endpoint.tag.split('}')[-1] in ['publisher','subscriber']:coll.remove(endpoint)
-                            tr=coll.find('d:transport_descriptors/d:transport_descriptor',ns)
-                            for field in list(tr):
-                                if field.tag.split('}')[-1]=='maxMessageSize':field.text='65000'
+                            coll.remove(coll.find('d:transport_descriptors',ns))
+                            rtps=coll.find('d:participant/d:rtps',ns)
+                            for field in list(rtps):rtps.remove(field)
+                            for tag,value in [('useBuiltinTransports','true'),('sendSocketBufferSize','1048576'),('listenSocketBufferSize','4194304')]:
+                                E.SubElement(rtps,'{'+ns['d']+'}'+tag).text=value
                         else:
                             ns={'d':'https://cdds.io/config'};d=root.find('d:Domain',ns);g=d.find('d:General',ns);inn=d.find('d:Internal',ns)
                             for field in list(g):
@@ -146,14 +147,19 @@ def main():
                 b=HOMES['12']+'/'+REMOTE+'/runs/'+a.run+'/'+name
                 pids['govern']=launch('12',['sudo','-n','timeout','-k','3','52','python3','-m','rospacer','govern','--mode','fixed','--seconds','47','--config',b+'/config.json','--trace',b+'/govern.csv'],HOMES['12']+'/'+REMOTE,b+'/govern.log')['pid']
                 time.sleep(.7)
+            if a.mode=='smoke':
+                b=HOMES['12']+'/'+REMOTE+'/runs/'+a.run+'/'+name
+                pids['capture']=launch('12',['sudo','-n','timeout','-s','INT','-k','3','40','tcpdump','-i','wlo1','-s','192','-w',b+'/data.pcap','dst','192.168.0.4','and','not','port','22'],HOMES['12']+'/'+REMOTE,b+'/capture.log')['pid']
             b=HOMES['10']+'/'+REMOTE+'/runs/'+a.run+'/'+name
             env=setup(rmw,'10')
+            if label=='vendor' and rmw=='fastdds':env+='export FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA; '
             if profiled or label=='vendor':env+=('export FASTRTPS_DEFAULT_PROFILES_FILE='+b+'/middleware.xml RMW_FASTRTPS_USE_QOS_FROM_XML=1; ' if rmw=='fastdds' else 'export CYCLONEDDS_URI=file://'+b+'/middleware.xml; ')
             subcmd=env+'cd '+HOMES['10']+'/'+REMOTE+'; exec timeout -k 3 48 python3 tools/traffic.py sub --count '+str(count)+' --hz '+str(hz)+' --seconds 43 --out '+b+'/sub.json'
             pids['sub']=launch('10',['bash','-c',subcmd],HOMES['10']+'/'+REMOTE,b+'/sub.log')['pid']
             time.sleep(.5)
             b=HOMES['12']+'/'+REMOTE+'/runs/'+a.run+'/'+name
             env=setup(rmw,'12')
+            if label=='vendor' and rmw=='fastdds':env+='export FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA; '
             if profiled or label=='vendor':env+=('export FASTRTPS_DEFAULT_PROFILES_FILE='+b+'/middleware.xml RMW_FASTRTPS_USE_QOS_FROM_XML=1; ' if rmw=='fastdds' else 'export CYCLONEDDS_URI=file://'+b+'/middleware.xml; ')
             cmd=env+'cd '+HOMES['12']+'/'+REMOTE+'; timeout -k 3 46 python3 tools/traffic.py pub --count '+str(count)+' --hz '+str(hz)+' --seconds 30 --discovery-seconds 8 --drain-seconds 5 --continue-on-publish-error --out '+b+'/pub.json > '+b+'/pub.log 2>&1'
             pubresult=shell('12',cmd,False)
@@ -165,7 +171,7 @@ def main():
             metrics=analyze_pair(pub,sub)
             summary={'name':name,'rmw':rmw,'label':label,'requested_load_ratio':loadratio,'C0_Bps':C0,'config':cfg,'shaped':shaped,'requested_count':count,'requested_hz':hz,'publisher_command':pubresult,'pids':pids,'metrics':metrics,'telemetry':{h:analyze_telemetry(local/h/'telemetry.jsonl') for h in HOMES},
                 'clock_validated':False,'latency_excluded_reason':'No independent wired clock reference; host10 unsynchronised in preflight',
-                'vendor_definition':'buffer-only UDP tuning with native fragment/history timing; LARGE_DATA availability checked separately' if label=='vendor' else None}
+                'vendor_definition':('Fast DDS supported LARGE_DATA built-ins plus 1MiB send/4MiB receive sockets' if rmw=='fastdds' else 'Cyclone native fragmentation/WHC plus 1MiB send/10MiB receive sockets') if label=='vendor' else None}
             summary['qdisc_after']=json.loads(shell('12','tc -j qdisc show dev wlo1')['stdout'])
             (local/'summary.json').write_text(json.dumps(summary,indent=2),encoding='utf-8');summaries.append(summary)
             print(json.dumps({'DONE':name,'metrics':metrics,'telemetry':summary['telemetry']}),flush=True)

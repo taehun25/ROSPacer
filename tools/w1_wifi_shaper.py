@@ -13,7 +13,7 @@ def main():
     try:
         shaper.install()
         shaper.tc('filter','add','dev','wlo1','parent','7ac0:','protocol','ip','prio','50','u32','match','ip','protocol','17','0xff','match','ip','dst','192.168.0.4/32','match','ip','dport','55311','0xffff','flowid','7ac0:10')
-        end=time.monotonic()+27
+        end=time.monotonic()+17
         with open(a.out,'w') as f:
             while time.monotonic()<end:
                 f.write(json.dumps({'mono':time.monotonic(),'qdisc':shaper.stats(),'class':shaper.class_stats()})+'\n');f.flush();time.sleep(.2)

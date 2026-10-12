@@ -12,10 +12,10 @@ def main():
     for name,burst in [('baseline',None),('burst1500',1500),('burst65536',65536)]:
         print('WIFI_PROBE '+name,flush=True);started=time.monotonic()
         if burst:
-            launch('12',['sudo','-n','timeout','-k','3','32','python3','-m','tools.w1_wifi_shaper','--burst',str(burst),'--out',dirs['12']+'/'+name+'_trace.jsonl'],'/home/csi2/'+REMOTE,dirs['12']+'/'+name+'_shaper.log');time.sleep(.6)
-        launch('10',['timeout','-k','2','26','iperf3','-s','-1','-B','192.168.0.4','-p','55311','-J'],'/home/csi/'+REMOTE,dirs['10']+'/'+name+'_server.json');time.sleep(.3)
-        client=remote('12','import subprocess,json;from pathlib import Path\nq=subprocess.run(["iperf3","-c","192.168.0.4","-B","192.168.0.3","-p","55311","-u","-b","0","-l","1400","-t","20","-J"],capture_output=True,text=True,timeout=24);r={"rc":q.returncode,"stdout":q.stdout,"stderr":q.stderr};Path('+repr(dirs['12']+'/'+name+'_client.json')+').write_text(json.dumps(r));print(json.dumps(r))')
-        (local/(name+'_client.json')).write_text(json.dumps(client,indent=2));time.sleep(max(0,28-(time.monotonic()-started)))
+            launch('12',['sudo','-n','timeout','-k','3','22','python3','-m','tools.w1_wifi_shaper','--burst',str(burst),'--out',dirs['12']+'/'+name+'_trace.jsonl'],'/home/csi2/'+REMOTE,dirs['12']+'/'+name+'_shaper.log');time.sleep(.6)
+        launch('10',['timeout','-k','2','16','iperf3','-s','-1','-B','192.168.0.4','-p','55311','-J'],'/home/csi/'+REMOTE,dirs['10']+'/'+name+'_server.json');time.sleep(.3)
+        client=remote('12','import subprocess,json;from pathlib import Path\nq=subprocess.run(["iperf3","-c","192.168.0.4","-B","192.168.0.3","-p","55311","-u","-b","0","-l","1400","-t","10","-J"],capture_output=True,text=True,timeout=14);r={"rc":q.returncode,"stdout":q.stdout,"stderr":q.stderr};Path('+repr(dirs['12']+'/'+name+'_client.json')+').write_text(json.dumps(r));print(json.dumps(r))')
+        (local/(name+'_client.json')).write_text(json.dumps(client,indent=2));time.sleep(max(0,18-(time.monotonic()-started)))
         server=fetch('10',dirs['10']+'/'+name+'_server.json');(local/(name+'_server.json')).write_text(server)
         if burst:
             for suffix in ['trace.jsonl','shaper.log']:(local/(name+'_'+suffix)).write_text(fetch('12',dirs['12']+'/'+name+'_'+suffix))

@@ -155,3 +155,50 @@ iperf3 3.9의 server end summary는 interval에서 byte 수신이 있는데도 b
 기록했으므로 여기서 수신 goodput을 인용하지 않는다. 원본 client/server JSON을 보존했다.
 시험 후 noqueue 복원, sysctl 미변경을 확인했다. 일반 UDP 한 종류에 대한 점검이며
 모든 UDP·터널·보안 RTPS 경로를 검증한 것은 아니다.
+
+## 2026-10-12 W1 장비 측정 및 남은 전제
+
+원자료는 `runs/w1_20261012_163000/`, 보고서는 상위 디렉터리의
+`html 파일 모음/결과/W1 구현 전제 검증_261012.html`에 보관했다.
+W1 전체 완료 상태가 아니다. 미수행 항목과 실패한 초기 run도 보존했다.
+
+12→10 UDP iperf3 30초 3회 수신 처리량은 23.13/21.74/22.55 Mb/s이며
+중앙값 C0는 22.5489 Mb/s다. TCP 30초는 61.46 Mb/s, ping 200회는
+200회 수신, 평균 RTT 45.857 ms다. iperf3 3.9 receiver end-summary의
+bytes=0 문제 때문에 보존한 수신 interval의 byte/seconds로 계산했다.
+무선 airtime 계수기가 없어 외부 채널 점유율이 0인 교정이라고 주장하지 않는다.
+
+1 MiB/KEEP_ALL/30초, 요청 0.8C0, HTB 0.5C0 조건에서 Fast DDS와
+CycloneDDS의 fq flow_limit=100/1490을 각각 측정했다. Fast는 각 run에서
+발행 실패 19회를 기록했다. Cyclone의 교정 후 두 run은 성공·수신 33/33이지만
+예정 65개를 모두 발행하지 못했다. publish 대기, 소켓 메모리, qdisc를 함께
+수집했으며, UdpSndbufErrors와 fq drop이 0이라는 사실을 기다림만 존재한다는
+증거로 사용하지 않는다. HTB에서 publish까지의 전체 인과 경로는 아직 확정하지 않았다.
+
+패킷 캡처에서 Cyclone의 첫 DATA_FRAG에 68 B 헤더가 있어 기존 1408 B
+fragment가 IP 단편화되는 것을 발견했다. 생성값을 1404 B로 수정하고
+Static/fixed 캡처에서 사용자 IP 단편화 0을 확인했다. Fast Vendor의 XML
+namespace와 기본 메모리 정책 문제도 수정했다. 양쪽 Default/Vendor/Static/fixed
+시운전은 각각 17/17 수신했다. Vendor는 구현한 기능 범위의 시운전이며
+proposal 전체 Vendor 설정 및 adaptive ROSPacer의 검증 완료를 뜻하지 않는다.
+
+4/5를 같은 SR2 AP에 연결해 5→4 배경 부하를 넣은 C2에서 12→10 수신은
+9.26/9.51/9.61 Mb/s였다. 추정값이 없으므로 모델 오차 20% 기준은 판정하지 못했다.
+다른 AP AX1500은 149번, SR2는 36번이어서 B2 같은 채널 간섭 조건이 아니다.
+사용자가 다른 AP 관리자 계정을 확인하지 못해 채널 변경 및 B2는 미수행이다.
+36이라는 번호 자체가 필수인 것이 아니라 두 AP의 채널 대역이 겹쳐야 한다.
+
+veth에서 HTB 200 Mb/s와 두 burst를 진단했지만 실제 Wi-Fi의 200 Mb/s 상한은
+검증하지 못했다. 현재 무선 처리량이 그보다 낮다. Wi-Fi에서 상한 200 Mb/s를
+부착한 10초 시운전은 baseline 22.74, burst 1500 B 22.16, burst 65536 B
+22.45 Mb/s였다. 단기 관측이며 처리량 무손실을 보장하는 통계적 근거가 아니다.
+
+plan/golden, 도착 간격 지터, 단절 후 첫 수신 지표, 라이브러리/소스 근거를
+보강했다. Golden XML은 양쪽 실제 노드와 publisher 생성에 성공했다.
+자동 검사 20개가 통과했다. 10번 시계 미동기화와 12번 불충분한 시계 근거로
+E2E 지연을 계산하지 않았다. active/busy/tx 확보, AP 중계 보정과 자기 부하
+검증, B2, 모델 예측 오차, 실제 무선 200 Mb/s 검증이 남는다. Zenoh는 후속 단계다.
+
+종료 영수증과 최종 조회에서 12/10 qdisc=noqueue, rmem_max/wmem_max=212992,
+Wi-Fi 절전 on, CPU powersave 복원을 확인했다. 단절 실험의 방화벽 규칙과
+커널 진단용 임시 장치는 제거했다. 4/5의 유한 시간 경쟁 트래픽도 종료됐다.

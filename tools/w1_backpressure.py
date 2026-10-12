@@ -68,10 +68,11 @@ def analyze_telemetry(path):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');p.add_argument('--outage-seconds',type=float,default=0);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');p.add_argument('--outage-seconds',type=float,default=0);p.add_argument('--calibration-label',default='calibration_ready');a=p.parse_args()
     if a.outage_seconds and (a.mode!='smoke' or a.only_label not in ('static','fixed') or not 0<a.outage_seconds<=10):p.error('outage requires smoke static/fixed and <=10seconds')
     base=ROOT/'runs'/a.run
-    cal=json.loads((base/'calibration_ready/summary.json').read_text())
+    if Path(a.calibration_label).name!=a.calibration_label:p.error('single calibration folder name required')
+    cal=json.loads((base/a.calibration_label/'summary.json').read_text())
     C0=cal['C0_UDP_receiver_median_bps']/8
     import re
     match=re.search(r'= ([0-9.]+)/([0-9.]+)/',cal['ping']['stdout']);rtt=float(match[2])/1000 if match else None
@@ -181,6 +182,9 @@ def main():
                 'clock_validated':False,'latency_excluded_reason':'No independent wired clock reference; host10 unsynchronised in preflight',
                 'vendor_definition':('Fast DDS supported LARGE_DATA built-ins plus 1MiB send/4MiB receive sockets' if rmw=='fastdds' else 'Cyclone native fragmentation/WHC plus 1MiB send/10MiB receive sockets') if label=='vendor' else None}
             summary['qdisc_after']=json.loads(shell('12','tc -j qdisc show dev wlo1')['stdout'])
+            import subprocess
+            summary['source_commit']=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+            summary['calibration_label']=a.calibration_label
             if a.outage_seconds:
                 events=json.loads((local/'10/outage.json').read_text());end=events['outage_ended_monotonic_ns']
                 arrivals=[r['arrival_monotonic_ns'] for r in sub.get('records',[]) if r.get('arrival_monotonic_ns',0)>=end]

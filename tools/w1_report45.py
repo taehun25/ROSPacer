@@ -79,7 +79,20 @@ def main():
     refusal=load(base/'adaptive_refusal.json',{});body+='<pre>'+esc(json.dumps(refusal,ensure_ascii=False,indent=2))+'</pre><p>실제 장비에서 적응형 시작 거부와qdisc 불변을 확인했다. 유효하지 않은 계수로 HTB상한을 갱신하는 시험은 완료 근거에서 제외한다.</p>'
     semantics=load(base/'semantics/summary.json',{})
     body+='<h3>공유기 직접 전송과 AP중계의 참조 시험</h3>'+table(['구간','active s','busy s','tx s','stationTX bytes'],[(name,num(semantics[name]['delta']['active_s']),num(semantics[name]['delta']['busy_s']),num(semantics[name]['delta']['tx_s']),semantics[name]['delta']['bytes']) for name in ['idle','ap_only','relay'] if name in semantics])
-    body+='<p>임시 passive monitor는4·5 MAC만 대상으로38초 캡처했고 삭제를 확인했다. AP→5 데이터 프레임은 중계 구간에서 포착됐으나 전체 프레임에 비해 불완전하다. busy와tx의 차감 관계에 대한 근거이며, 모든 AP airtime의 정확한 합을 얻은 것으로 해석하지 않는다. 10번의 독립 monitor 캡처를 준비했다. 자동rfmon 전환은현재dumpcap에서 실패했으며, 임시 인터페이스의 직접 생성은 sudo 정책 때문에 사용자의 로컬 실행이 필요하다.</p>'
+    body+='<p>4번의 임시 passive monitor는4·5 MAC만 대상으로38초 캡처했고 삭제를 확인했다. AP→5 데이터 프레임은 중계 구간에서 포착됐으나 캡처는 불완전했다. 모든 AP airtime의 정확한 합을 얻은 것으로 해석하지 않는다.</p>'
+    independent=load(base/'independent10_retry_main/summary.json',{})
+    headers=load(base/'independent10_retry/air.headers.json',{})
+    phy=load(base/'independent10_retry/phy_summary.json',{})
+    if independent and headers and phy:
+        derived['independent_observer']={'probes':independent,'headers':headers,'phy':phy}
+        body+='<h3>10번 독립 관측 결과</h3><p>10번에서 45초 캡처를 완료했다. 4·5번에는 모니터 인터페이스를 추가하지 않았다. 첫 시도는 준비 중 120초 대기 제한이 끝나 캡처되지 않았으며, 원자료를 보존하고 제어기 준비 후 자동 시작하는 순서로 다시 수행했다. 10번의 임시 모니터 삭제와 SR2·149번 관리 연결 유지도 확인했다.</p>'
+        body+=table(['구간','active s','busy s','tx s','station TX bytes'],[(name,num(independent[name]['delta']['active_s']),num(independent[name]['delta']['busy_s']),num(independent[name]['delta']['tx_s']),independent[name]['delta']['bytes']) for name in ['idle','ap_only','relay']])
+        body+=table(['관측 방향','데이터 프레임','A-MSDU 프레임','관측 wire bytes','airtime 값 수','A-MPDU reference 수'],[(direction,r['frames'],r['amsdu_frames'],r['radiotap_removed_wire_bytes'],r['duration_values'],r['ampdu_references']) for direction,r in phy['directions'].items()])
+        body+='<p>총 9,364프레임 중 데이터 3,984개에 HE 메타데이터가 있었고, 여러 MSDU를 묶는 A-MSDU를 직접 확인했다. tcpdump의 커널 drop은0이지만 무선 수신의 완전성을 보장하지 않는다. AP→5의 관측 wire bytes는 약5.33MB이고 같은 중계 시험의 전송 payload는 약99.99MB였다. 단위가 서로 다르고 재전송도 포함하므로 이를 정확한 캡처율로 사용하지 않으며, 전체 airtime 합을 추정하기에도 부족하다. 캡처에 A-MPDU reference와 계산된 frame duration 값은 없었다. 10번 시계는 종단 지연에 사용하지 않았다.</p>'
+        body+='<p><b>판정:</b> 공유기 직접 전송에서도 busy0.585초보다 tx5.671초가 크고, 중계 시 busy가2.066초로 증가했다. 이 장비에서 기존 tx≤busy 전제는 사용할 수 없다. 중계 전송이 busy에 반영된다는 정성적 근거는 확보했지만, 자기 부하 전체에서 중계 airtime의 정확한 차감과 고정 O를 독립 식별하는 검증은 통과하지 못했다. 계수의 채널 귀속 수정과 계수의 물리적 의미 검증을 구분한다.</p>'
+        feedback=load(base/'receiver_airtime_diagnostic.json',{})
+        if feedback:
+            body+='<p>추가로 수신 측 station rx duration의 증분을 대조했다. 자기 부하0.2·0.4·0.6에서 값이 갱신되지 않아0으로 남았고0.8에서만 증가했다. 수신 데이터가 실제 있었으므로 앞선0을 airtime0으로 취급할 수 없다. 이 경로도 현재 그대로는 실시간 중계 보정 입력으로 채택하지 않는다.</p>'
     body+='<h2>B2 · C2</h2>'
     for label in ['b2','c2']:
         result=load(base/label/'summary.json',{})
@@ -102,7 +115,7 @@ def main():
         ['Zenoh','사용자 우선순위에 따라 Fast/Cyclone 이후로 이관']])
     restoration=load(base/'final_receipt.json',{})
     body+='<h2>종료·복원과 남은 일</h2><pre>'+esc(json.dumps(restoration,ensure_ascii=False,indent=2))+'</pre>'
-    body+='<p>남은 선행 작업은10번의 독립 프레임 관측으로시간계수의물리적 의미·AP 중계·aggregation을 대조하고 모델의 자기부하 잔차를 확정하는 것이다. 후보 해석의B2/C2 오차는20%안이지만, 이 조건부 계산을 일반 adaptive의 정식 모델승인으로 바꾸지는 않았다. 랜케이블이나 MOK 등록을 반복할 필요는 없다.</p>'
+    body+='<p>10번 독립 관측까지 수행했지만 적응형 모델의 승인 조건은 미통과다. 후보 해석의B2/C2 오차는20%안이지만 자기 부하 잔차가 통과하지 않아 일반 adaptive의 정식 모델승인으로 바꾸지 않았다. 다음 작업은 busy/TX 포함 관계를 장비별 입력 계약으로 명시하고, aggregation과 양방향 PHY·재시도를 반영하는 중계 비용을 교정한 뒤, 교정에 쓰지 않은 별도 자기 부하 및 B2/C2 데이터로 재검증하는 것이다. 정확한 airtime 합이 필요한 경우 전체 HE 프레임과 PPDU/aggregation 메타데이터를 제공하는 별도 관측 경로가 필요하다. 같은 MOK 등록이나 랜 연결을 반복하는 것으로 해결되지는 않는다.</p>'
     body+='<p>기존12/10 역압·200Mb/s·단절 자료는 runs/w1_20261012_ch149 및 이전 보고서에 보존했다. 장비·커널·버퍼·런타임이 다른 결과를 성능 개선률로 합치지 않는다.</p><p>측정 코드와설정/버전/교정/시계/원자료는 '+esc(str(base))+'에 있다. 보고서 처리 커밋 '+derived['processing_commit']+'.</p>'
     body+='<p>근거: <a href="https://docs.kernel.org/6.8/driver-api/80211/cfg80211.html#c.survey_info">Linux survey_info</a>, <a href="https://chrony-project.org/doc/4.2/chronyc.html">chrony4.2 tracking/ntpdata</a>, <a href="https://fast-dds.docs.eprosima.com/en/2.6.x/fastdds/use_cases/large_data/large_data.html">Fast DDS2.6 large-data</a>. 실제 버전 소스 발췌는 기존W1 evidence.json에 보존했다.</p>'
     style='body{font:16px/1.65 "Malgun Gothic",sans-serif;background:#f5f7fb;color:#192438;margin:0}main{max-width:1180px;margin:32px auto;padding:32px;background:white}h1{font-size:30px}h2{margin-top:40px;border-bottom:2px solid #dfe6f0}p{max-width:1040px}.status{padding:18px;background:#fff1db;border-left:5px solid #ba7500}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}th,td{padding:10px;text-align:left;border-bottom:1px solid #dfe6f0;vertical-align:top}th{background:#eaf0fa;white-space:nowrap}pre{background:#f1f4f8;padding:16px;overflow:auto;font:13px/1.5 Consolas,monospace}a{color:#165aba}'

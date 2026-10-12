@@ -343,3 +343,34 @@ C2오차1.33..6.00%는 진단용 조건부 계산이다. 자기부하 잔차와O
 AX1500복귀를 확인했다. 최초전원세션은복원확인후종료했고 phase2는1시간자동복원가드다.
 독립관측을위해 유선관리·runtimechrony는유지중이다. W1정식통과판정은보류이며
 Zenoh는사용자순서에따라후속이다. 자동검사32개통과,각실행의커밋/소스SHA와설정/시계를저장했다.
+
+### 2026-10-12 독립 관측 완료 및 최종 복원
+
+10번의 독립 HE 모니터 캡처를 `independent10_retry`에서 45초 수행했다.
+처음 경로에서는 제어기 시작 대기 초과를 관측했고, 나중에 동일 marker 경로에
+나타난 빈 pcap도 별도 보존했다. 새 경로와 준비 후 자동 시작 순서로 재측정했다.
+캡처는 9,364프레임, HE 데이터 3,984개, 커널 drop0이었다. AP→5 데이터539개 중
+A-MSDU535개, 관측 wire bytes 약5.33MB였고 실제 relay payload는 약99.99MB였다.
+단위가 다르고 재전송이 포함되므로 정확한 캡처율로 쓰지 않는다. 모든 데이터에
+계산된 airtime과 A-MPDU reference가 없어 전체 PPDU airtime은 독립 식별하지 못했다.
+제어기 수정본은03519be에 고정했고 실행 시 working-tree SHA를 별도 보존했다.
+초기 측정의 Pair provenance는7fb2af3이며 새 source trace와 함께 해석해야 한다.
+
+모니터를 추가하지 않은4번의 AP직접 전송8초에서 busy0.585초,tx5.671초,
+중계8.34초에서 busy2.066초,tx3.960초였다. 기존tx≤busy 전제는 실제 장비에서
+성립하지 않는다. AP중계가 busy에 반영된다는 정성적 근거와 aggregation 관측은
+확보했지만, 식(7)의 정량 차감·자기부하 잔차·intrinsic O 승인은 미통과다.
+수신5번 station rx duration도 자기부하0.2/0.4/0.6 동안 증분0으로 남아,
+그 값을 실제 airtime0으로 대체할 수 없다. 기존 adaptive 검증 게이트를 유지한다.
+
+4/5 session_independent10을 종료하고 양쪽 baseline 복원true를 확인했다.
+Wi-Fi 절전on, CPU powersave, rmem/wmem212992, root qdisc noqueue, 실험 프로세스 종료,
+임시 방화벽 규칙 없음, AX1500 연결을 확인했다. 4번 runtime chrony source와5번
+임시 유선 허용·수동 주소를 제거하고4번의 유선 연결을 비활성화했다. 저장된
+NetworkManager/chrony 설정 파일은 수정하지 않았다.10번 w1mon 삭제와SR2 연결 유지,
+제어PC의SR2 복귀도 확인했다. 서명된 survey 수정 드라이버와MOK 등록은 유지했다.
+
+갱신 보고서는 `html 파일 모음/결과/W1 4·5번 유선 동기화 및 계수기 검증_261012.html`.
+W1 전체를 통과로 표시하지 않는다. 후속은 장비별 busy/TX 입력 계약과 aggregation을
+반영한 중계 비용 교정, 별도 데이터로 자기부하/B2/C2 재검증이다. 정확한 airtime
+합의 독립 검증에는 완전한 HE/PPDU 메타데이터 관측 경로가 필요하다.

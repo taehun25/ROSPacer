@@ -23,6 +23,7 @@ def main():
     if 'ROSPacer' not in out.parts or 'runs' not in out.parts or out.exists():raise ValueError('fresh experiment capture path required')
     marker=Path(a.start_marker).resolve() if a.start_marker else None
     if marker and marker.parent!=out.parent:raise ValueError('marker must be in the same experiment folder')
+    if marker and marker.exists():raise ValueError('fresh start marker required; preserve the earlier attempt')
     def stop(*args):raise KeyboardInterrupt()
     signal.signal(signal.SIGTERM,stop)
     try:

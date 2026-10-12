@@ -40,6 +40,17 @@ class PairedMetrics(unittest.TestCase):
         with self.assertRaises(ValueError):
             analyze_pair(dict(role="sub"),dict(role="sub"))
 
+    def test_latency_requires_bounded_clock_and_complete_timestamps(self):
+        pub=dict(role='pub',requested=1,records=[dict(seq=0)])
+        sub=dict(role='sub',records=[dict(seq=0,arrival_monotonic_ns=1,arrival_wall_ns=2000000,publisher_wall_ns=1000000)])
+        self.assertIsNone(analyze_pair(pub,sub)['end_to_end_latency_ms'])
+        evidence=dict(validated=True,relative_error_bound_ms=.08)
+        self.assertEqual(analyze_pair(pub,sub,evidence)['end_to_end_latency_ms']['p50'],1)
+        sub['records'][0]['publisher_wall_ns']=5000000
+        self.assertFalse(analyze_pair(pub,sub,evidence)['clock_validated'])
+        with self.assertRaises(ValueError):
+            analyze_pair(pub,sub,dict(validated=True,relative_error_bound_ms=2))
+
 
 if __name__ == "__main__":
     unittest.main()

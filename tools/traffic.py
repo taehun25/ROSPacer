@@ -143,7 +143,7 @@ def main():
             error=error, exit_reason=exit_reason,
             records=rows, unique_received=len(ids), duplicates=duplicates,
             missing=sorted(set(range(a.count))-ids) if a.role == "sub" else None,
-            note="No end-to-end latency: host clocks not synchronised. Includes 16-byte sequence header."),
+            note="Raw wall timestamps retained; E2E latency requires independent clock qualification. Includes 16-byte sequence header."),
             indent=2), encoding="utf-8")
         node.destroy_node()
         rclpy.shutdown()

@@ -83,6 +83,14 @@ class OperatingPoints(unittest.TestCase):
             cyclone(cfg, path, "wlo1", "192.168.0.4")
             self.assertTrue(validate(path, schema))
 
+    def test_unqualified_survey_semantics_prevents_system_mutation(self):
+        cfg=synthesize(1048576,10,1,25000000,.004,1)
+        cfg.update(dev='wlp2s0',airtime_overhead_s=.00001,relay_in_survey=True)
+        with patch('rospacer.linux.observe',return_value={'adaptive_ready':True}),patch('rospacer.linux.Shaper') as shaper:
+            with self.assertRaisesRegex(RuntimeError,'semantics have not passed'):
+                govern(cfg,'adaptive',1,'unused.csv')
+            shaper.assert_not_called()
+
     def test_cyclone_fragment_budget_covers_directed_repair(self):
         import xml.etree.ElementTree as E
         for overhead in [64, 128]:

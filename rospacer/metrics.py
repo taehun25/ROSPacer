@@ -12,7 +12,7 @@ def percentile(values, fraction):
     return ordered[lo]+(ordered[hi]-ordered[lo])*(pos-lo)
 
 
-def analyze_pair(publisher, subscriber):
+def analyze_pair(publisher, subscriber, clock_evidence=None):
     if publisher.get("role") != "pub" or subscriber.get("role") != "sub":
         raise ValueError("publisher and subscriber roles required")
     requested = publisher["requested"]
@@ -41,6 +41,22 @@ def analyze_pair(publisher, subscriber):
     actual_hz = None
     if len(starts) > 1 and starts[-1] > starts[0]:
         actual_hz = (len(starts)-1)*1e9/(starts[-1]-starts[0])
+    latency=None
+    clock_validated=False
+    if clock_evidence and clock_evidence.get('validated') is True:
+        bound=clock_evidence.get('relative_error_bound_ms')
+        if not isinstance(bound,(int,float)) or not math.isfinite(bound) or not 0<=bound<=1:
+            raise ValueError('qualified relative clock bound required')
+        stamped={}
+        for row in arrivals:
+            if 0<=row['seq']<requested and 'arrival_wall_ns' in row and 'publisher_wall_ns' in row:
+                stamped.setdefault(row['seq'],(row['arrival_wall_ns']-row['publisher_wall_ns'])/1e6)
+        values=list(stamped.values())
+        if len(stamped)==len(valid_ids) and values and min(values)>=-bound:
+            latency=dict(p50=percentile(values,.5),p95=percentile(values,.95),p99=percentile(values,.99),
+                         minimum=min(values),maximum=max(values),samples=len(values),clock_error_bound_ms=bound,
+                         definition='payload timestamp before publish to receiver callback; includes serialization/queueing')
+            clock_validated=True
     return dict(requested=requested, attempted=len(attempts), publish_succeeded=len(successes),
         publish_failed=len(attempts)-len(successes), unique_received=len(valid_ids),
         delivery_requested=len(valid_ids)/requested,
@@ -57,9 +73,9 @@ def analyze_pair(publisher, subscriber):
         arrival_interval_ms=dict(mean=statistics.mean(intervals) if intervals else None,
                                   stdev=statistics.pstdev(intervals) if intervals else None,
                                   p95=percentile(intervals,.95), p99=percentile(intervals,.99)),
-        arrival_interval_goodput_Bps=goodput, end_to_end_latency_ms=None,
+        arrival_interval_goodput_Bps=goodput, end_to_end_latency_ms=latency,
         successful_publish_per_target_second=len(successes)/publisher['measurement_target_s'] if publisher.get('measurement_target_s') else None,
-        clock_validated=False,
+        clock_validated=clock_validated,
         publisher_exit_reason=publisher.get("exit_reason", "legacy_log_unspecified"),
         subscriber_exit_reason=subscriber.get("exit_reason", "legacy_log_unspecified"),
         notes=["Successful-publish delivery alone can hide offered-load reduction.",

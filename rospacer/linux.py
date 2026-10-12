@@ -205,6 +205,8 @@ def govern(cfg, mode, seconds, trace, dry_run=False):
         initial = observe(cfg["dev"])
         if not initial["adaptive_ready"]:
             raise RuntimeError("adaptive unavailable: driver lacks active/busy/tx survey counters")
+        if cfg.get("survey_semantics_validated") is not True:
+            raise RuntimeError("adaptive unavailable: survey self-TX/relay semantics have not passed calibration")
     else:
         initial = None
     if dry_run:

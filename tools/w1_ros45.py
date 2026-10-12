@@ -44,10 +44,14 @@ class Campaign:
         if q.returncode:raise RuntimeError(q.stderr.decode())
 
     def deploy(self):
-        for h,home in self.homes.items():
+        buf=io.BytesIO()
+        with tarfile.open(fileobj=buf,mode='w:gz') as tf:
             for folder in ['rospacer','tools']:
-                for f in (ROOT/folder).glob('*.py'):
-                    self.write(h,home+'/'+REMOTE+'/'+folder+'/'+f.name,f.read_bytes())
+                for f in (ROOT/folder).glob('*.py'):tf.add(f,arcname=folder+'/'+f.name)
+        for h,home in self.homes.items():
+            code='import sys,tarfile;from pathlib import Path\np=Path('+repr(home+'/'+REMOTE)+')\nwith tarfile.open(fileobj=sys.stdin.buffer,mode="r|gz") as tf:\n for m in tf:\n  parts=Path(m.name).parts\n  if len(parts)!=2 or parts[0] not in ["rospacer","tools"] or not m.isfile():raise RuntimeError("invalid source member")\n  q=p.joinpath(*parts);q.parent.mkdir(parents=True,exist_ok=True);q.write_bytes(tf.extractfile(m).read())'
+            q=self.c.extra(h,'python3 -c '+shlex.quote(code),buf.getvalue())
+            if q.returncode:raise RuntimeError(q.stderr.decode())
 
     def launch(self,h,argv,folder,log):
         return self.c.python(h,'import subprocess,json;from pathlib import Path;p=Path('+repr(folder)+');p.mkdir(parents=True,exist_ok=True);q=subprocess.Popen('+repr(argv)+',cwd='+repr(self.homes[h]+'/'+REMOTE)+',stdin=subprocess.DEVNULL,stdout=open(p/'+repr(log)+',"w"),stderr=subprocess.STDOUT,start_new_session=True);print(json.dumps({"pid":q.pid}))')
@@ -93,7 +97,7 @@ class Campaign:
         cfg['cap_packet_Bps']=.9*self.C0
         if label=='vendor':cfg.update(socket_tx_bytes=1048576,socket_rx_bytes=4194304 if rmw=='fastdds' else 10485760)
         folders={h:home+'/'+REMOTE+'/runs/'+self.a.run+'/ros45/'+name for h,home in self.homes.items()}
-        old={};pids={};start=time.monotonic()
+        old={};pids={};last_guard=time.monotonic()
         print('START '+name,flush=True)
         try:
             for h in self.homes:
@@ -108,6 +112,7 @@ class Campaign:
                     ('clock',['sudo','-n','timeout','-k','2','59','python3','tools/w1_clock_sample.py','--seconds','53','--out',folders[h]+'/clock.jsonl']),
                     ('telemetry',['sudo','-n','timeout','-k','2','59','python3','tools/telemetry.py','--seconds','53','--interval','.1','--dev','wlp2s0','--out',folders[h]+'/telemetry.jsonl'])]:
                     pids[k+h]=self.launch(h,args,folders[h],k+'.log')
+                    if k=='wireguard':last_guard=time.monotonic()
             time.sleep(.5)
             if label=='fixed':
                 pids['govern']=self.launch('4',['sudo','-n','timeout','-k','2','50','python3','-m','rospacer','govern','--config',folders['4']+'/config.json','--mode','fixed','--seconds','46','--trace',folders['4']+'/govern.csv'],folders['4'],'govern.log')
@@ -124,7 +129,7 @@ class Campaign:
                 return e+'cd '+self.homes[h]+'/'+REMOTE+'; exec '+shlex.join(args)
             pids['sub']=self.launch('5',['bash','-c',command('5','sub')],folders['5'],'sub.log');time.sleep(.7)
             pids['pub']=self.launch('4',['bash','-c',command('4','pub')],folders['4'],'pub.log')
-            while time.monotonic()-start<60:time.sleep(min(1,60-(time.monotonic()-start)))
+            while time.monotonic()-last_guard<60:time.sleep(min(1,60-(time.monotonic()-last_guard)))
             for h in self.homes:self.archive(h,folders[h],local/h)
             pub=json.loads((local/'4/pub.json').read_text());sub=json.loads((local/'5/sub.json').read_text())
             stamps=[r[k] for r in sub.get('records',[]) for k in ['publisher_wall_ns','arrival_wall_ns'] if k in r]

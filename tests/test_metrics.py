@@ -1,6 +1,6 @@
 import unittest
 
-from rospacer.metrics import analyze_pair
+from rospacer.metrics import analyze_pair,recovery_metric
 
 
 class PairedMetrics(unittest.TestCase):
@@ -39,6 +39,19 @@ class PairedMetrics(unittest.TestCase):
     def test_roles_are_checked(self):
         with self.assertRaises(ValueError):
             analyze_pair(dict(role="sub"),dict(role="sub"))
+
+    def test_proposal_jitter_is_deviation_from_requested_period(self):
+        pub=dict(role='pub',requested=3,requested_hz=10,records=[])
+        sub=dict(role='sub',records=[dict(seq=i,arrival_monotonic_ns=t) for i,t in enumerate([0,130000000,240000000])])
+        self.assertAlmostEqual(analyze_pair(pub,sub)['arrival_jitter_ms']['p99'],29.8)
+
+    def test_recovery_uses_latency_window_not_first_arrival(self):
+        out=dict(outage_started_monotonic_ns=5e9,outage_ended_monotonic_ns=10e9)
+        records=[dict(seq=i,arrival_monotonic_ns=t*1e9,arrival_wall_ns=int(t*1e9),publisher_wall_ns=int((t-d/1000)*1e9)) for i,(t,d) in enumerate([(2,10),(3,10),(4,10),(10.1,1000),(10.5,100),(11.1,15),(11.3,10),(11.5,10),(11.7,10)])]
+        r=recovery_metric(dict(records=records),out,dict(validated=True))
+        self.assertAlmostEqual(r['first_arrival_after_restore_s'],.1)
+        self.assertAlmostEqual(r['recovery_s'],1.7)
+        self.assertIsNone(recovery_metric(dict(records=records),out,None)['recovery_s'])
 
     def test_latency_requires_bounded_clock_and_complete_timestamps(self):
         pub=dict(role='pub',requested=1,records=[dict(seq=0)])

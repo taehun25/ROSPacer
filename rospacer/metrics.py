@@ -33,6 +33,8 @@ def analyze_pair(publisher, subscriber, clock_evidence=None):
         first_arrivals.setdefault(row["seq"], row["arrival_monotonic_ns"])
     times = sorted(t for seq, t in first_arrivals.items() if 0 <= seq < requested)
     intervals = [(b-a)/1e6 for a, b in zip(times, times[1:])]
+    hz=publisher.get('requested_hz')
+    deviations=[abs(dt-1000/hz) for dt in intervals] if isinstance(hz,(int,float)) and math.isfinite(hz) and hz>0 else []
     payload = publisher.get("payload_bytes")
     goodput = None
     if payload is not None and len(times) > 1 and times[-1] > times[0]:
@@ -73,6 +75,8 @@ def analyze_pair(publisher, subscriber, clock_evidence=None):
         arrival_interval_ms=dict(mean=statistics.mean(intervals) if intervals else None,
                                   stdev=statistics.pstdev(intervals) if intervals else None,
                                   p95=percentile(intervals,.95), p99=percentile(intervals,.99)),
+        arrival_jitter_ms=dict(p50=percentile(deviations,.5),p95=percentile(deviations,.95),p99=percentile(deviations,.99),
+                              definition='abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure'),
         arrival_interval_goodput_Bps=goodput, end_to_end_latency_ms=latency,
         successful_publish_per_target_second=len(successes)/publisher['measurement_target_s'] if publisher.get('measurement_target_s') else None,
         clock_validated=clock_validated,
@@ -83,3 +87,31 @@ def analyze_pair(publisher, subscriber, clock_evidence=None):
                "Interval variability includes loss/backpressure; it is not isolated network jitter.",
                "No E2E latency is computed without verified clock synchronisation.",
                "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."])
+
+
+def recovery_metric(subscriber,outage,clock_evidence):
+    """Proposal recovery: trailing1s p95 falls below2x pre-outage p95."""
+    result={'recovery_s':None,'definition':'first full post-restore1s arrival window with p95 latency <=2x pre-outage p95; minimum3samples',
+            'clock_validated':bool(clock_evidence and clock_evidence.get('validated'))}
+    if not result['clock_validated']:
+        result['reason']='clock evidence not qualified';return result
+    start,end=outage['outage_started_monotonic_ns'],outage['outage_ended_monotonic_ns']
+    seen=set();rows=[]
+    for r in subscriber.get('records',[]):
+        if r.get('seq') in seen or not all(k in r for k in ['seq','arrival_monotonic_ns','arrival_wall_ns','publisher_wall_ns']):continue
+        seen.add(r['seq']);rows.append((r['arrival_monotonic_ns'],(r['arrival_wall_ns']-r['publisher_wall_ns'])/1e6))
+    rows.sort()
+    baseline=[d for t,d in rows if start-4e9<=t<start]
+    if len(baseline)<3:result['reason']='insufficient pre-outage samples';return result
+    result['baseline_p95_ms']=percentile(baseline,.95);result['threshold_ms']=2*result['baseline_p95_ms']
+    after=[(t,d) for t,d in rows if t>=end]
+    result['first_arrival_after_restore_s']=(after[0][0]-end)/1e9 if after else None
+    result['windows']=[]
+    for t,d in after:
+        if t<end+1e9:continue
+        window=[v for u,v in after if t-1e9<=u<=t]
+        if len(window)<3:continue
+        p95=percentile(window,.95);result['windows'].append({'after_restore_s':(t-end)/1e9,'p95_ms':p95,'samples':len(window)})
+        if result['recovery_s'] is None and p95<=result['threshold_ms']:result['recovery_s']=(t-end)/1e9
+    if result['recovery_s'] is None:result['reason']='threshold not reached within observed windows (censored)'
+    return result

@@ -23,12 +23,12 @@ sys.path.insert(0,str(ROOT))
 from rospacer.model import synthesize
 from rospacer import profiles
 from rospacer.clock import qualify_pair
-from rospacer.metrics import analyze_pair
+from rospacer.metrics import analyze_pair,recovery_metric
 
 
 class Campaign:
     def __init__(self,a):
-        self.a=a;self.out=ROOT/'runs'/a.run/(('ros45_stock' if a.pinned else 'ros45')+('_bp' if a.backpressure else ''));self.out.mkdir(parents=True,exist_ok=True)
+        self.a=a;self.out=ROOT/'runs'/a.run/(('ros45_stock' if a.pinned else 'ros45')+('_bp' if a.backpressure else '_outage' if a.outage_seconds else ''));self.out.mkdir(parents=True,exist_ok=True)
         self.c=Control(a.ip4,a.ip5,'Wi-Fi 2',self.out)
         self.homes={'4':'/home/csilab','5':'/home/csi'};self.ips={'4':a.ip4,'5':a.ip5}
         cal=ROOT/'runs'/a.run/'calibration'
@@ -135,6 +135,8 @@ class Campaign:
                 if role=='pub':args+=['--discovery-seconds','8','--drain-seconds','5','--continue-on-publish-error']
                 return e+'cd '+self.homes[h]+'/'+REMOTE+'; exec '+shlex.join(args)
             pids['sub']=self.launch('5',['bash','-c',command('5','sub')],folders['5'],'sub.log');time.sleep(.7)
+            if self.a.outage_seconds:
+                pids['outage']=self.launch('5',['timeout','-k','2','25','python3','tools/w1_outage.py','--seconds',str(self.a.outage_seconds),'--delay','8','--peer',self.ips['4'],'--out',folders['5']+'/outage.json'],folders['5'],'outage.log')
             pids['pub']=self.launch('4',['bash','-c',command('4','pub')],folders['4'],'pub.log')
             while time.monotonic()-last_guard<60:time.sleep(min(1,60-(time.monotonic()-last_guard)))
             for h in self.homes:self.archive(h,folders[h],local/h)
@@ -151,6 +153,9 @@ class Campaign:
             clock=qualify_pair(*[[json.loads(s) for s in (local/h/'clock.jsonl').read_text().splitlines()] for h in ['4','5']],min(stamps) if stamps else 0,max(stamps) if stamps else 0)
             summary={'name':name,'config':cfg,'commit':self.commit,'source_sha256':self.hashes,'requested_hz':hz,'clock':clock,'metrics':analyze_pair(pub,sub,clock),'telemetry':{h:analyze_telemetry(local/h/'telemetry.jsonl') for h in self.homes},'pids':pids,'duration_s':duration,'comparison_scope':'short functional smoke; no performance superiority claim; wired DDS rejected while clocks/SSH allowed'}
             summary['pinned_runtime_check']=library_check
+            if self.a.outage_seconds:
+                outage=json.loads((local/'5/outage.json').read_text())
+                summary['outage']=outage;summary['recovery']=recovery_metric(sub,outage,clock)
             summary['restoration']={h:json.loads((local/h/'wired_guard.restoration.json').read_text()) for h in self.homes}
             summary['qdisc_after']=self.c.python('4',"import subprocess,json;print(subprocess.check_output(['tc','-j','qdisc','show','dev','wlp2s0'],text=True))")
             (local/'summary.json').write_text(json.dumps(summary,indent=2))
@@ -162,7 +167,8 @@ class Campaign:
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--run',required=True);p.add_argument('--ip4',default='192.168.0.4');p.add_argument('--ip5',default='192.168.0.5');p.add_argument('--seconds',type=float,default=15);p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--label',choices=['default','vendor','static','fixed']);p.add_argument('--pinned',action='store_true');p.add_argument('--backpressure',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--run',required=True);p.add_argument('--ip4',default='192.168.0.4');p.add_argument('--ip5',default='192.168.0.5');p.add_argument('--seconds',type=float,default=15);p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--label',choices=['default','vendor','static','fixed']);p.add_argument('--pinned',action='store_true');p.add_argument('--backpressure',action='store_true');p.add_argument('--outage-seconds',type=float,default=0);a=p.parse_args()
+    if a.outage_seconds and (a.backpressure or a.label not in ['static','fixed'] or not 0<a.outage_seconds<=10):p.error('outage requires static/fixed smoke, <=10seconds')
     if a.backpressure:a.seconds=30
     if Path(a.run).name!=a.run or (not a.backpressure and not 5<=a.seconds<=20):p.error('single run folder and smoke duration5..20s')
     c=Campaign(a)

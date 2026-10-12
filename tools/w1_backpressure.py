@@ -68,7 +68,7 @@ def analyze_telemetry(path):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');a=p.parse_args()
     base=ROOT/'runs'/a.run
     cal=json.loads((base/'calibration_ready/summary.json').read_text())
     C0=cal['C0_UDP_receiver_median_bps']/8
@@ -83,9 +83,10 @@ def main():
             specs += [(rmw,'bp_default100',.8,100),(rmw,'bp_design',.8,None)]
         else:specs += [(rmw,label,.2,None) for label in ['default','vendor','static','fixed']]
     summaries=[]
+    if a.only_label:specs=[s for s in specs if s[1]==a.only_label]
     try:
         for index,(rmw,label,loadratio,flow) in enumerate(specs):
-            name=rmw+'_'+label
+            name=rmw+'_'+label+a.suffix
             local=base/name
             if (local/'summary.json').exists():
                 print('SKIP existing '+name,flush=True);continue
@@ -130,6 +131,7 @@ def main():
                                 if field.tag.split('}')[-1] in ['MaxMessageSize','FragmentSize']:g.remove(field)
                             for field in list(inn):
                                 if field.tag.split('}')[-1] not in ['SocketSendBufferSize','SocketReceiveBufferSize']:inn.remove(field)
+                        E.register_namespace('',ns['d'])
                         tree.write(profile,encoding='utf-8',xml_declaration=True)
                     profiles.validate(profile,ROOT/'reference'/('fastdds-2.6.10-local-validation.xsd' if rmw=='fastdds' else 'cyclonedds-0.10.5.xsd'))
                     write_remote(h,remote_base+'/middleware.xml',profile.read_text())

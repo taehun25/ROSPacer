@@ -119,7 +119,7 @@ def main():
         for h,key in [('12','worker'),('12','client'),('10','server')]:
             if key not in workers:continue
             pid=workers[key]['pid']
-            remote(h,"import os,signal,json;from pathlib import Path;p=Path('/proc')/str("+str(pid)+")/'cmdline';r={'pid':"+str(pid)+",'already_exited':not p.exists()}\nif p.exists():\n cmd=p.read_bytes();assert b'55461' in cmd and (b'iperf3' in cmd or b'w1_b2_worker.py' in cmd);assert os.getpgid("+str(pid)+")=="+str(pid)+";os.killpg("+str(pid)+",signal.SIGTERM);r['signalled']=True\nprint(json.dumps(r))")
+            remote(h,"import os,signal,json;from pathlib import Path;p=Path('/proc')/str("+str(pid)+")/'cmdline';r={'pid':"+str(pid)+"}\ntry:cmd=p.read_bytes()\nexcept FileNotFoundError:cmd=b''\nr['already_exited']=not bool(cmd)\nif cmd:\n assert b'55461' in cmd and (b'iperf3' in cmd or b'w1_b2_worker.py' in cmd);assert os.getpgid("+str(pid)+")=="+str(pid)+"\n try:os.killpg("+str(pid)+",signal.SIGTERM);r['signalled']=True\n except ProcessLookupError:r['already_exited']=True\nprint(json.dumps(r))")
         for h,vals in old.items():
             q=ssh(h,'sudo -n /sbin/sysctl -w '+shlex.join(['net.core.'+k+'='+str(v) for k,v in vals.items()]));assert q.returncode==0,q.stderr
         if moved:

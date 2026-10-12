@@ -31,6 +31,7 @@ def main():
     p.add_argument("--delay", type=float, default=10)
     p.add_argument("--out", required=True)
     p.add_argument("--source-commit", required=True)
+    p.add_argument("--ssid", choices=['iptime5GAX1500','iptime5GAX1500SR2'],default='iptime5GAX1500')
     a = p.parse_args()
     for value in [a.peer, a.bind]:
         if ipaddress.ip_address(value).version != 4:
@@ -40,8 +41,8 @@ def main():
     folder = Path(a.out)
     folder.mkdir(parents=True, exist_ok=True)
     initial = link(a.dev)
-    if "SSID: iptime5GAX1500\n" not in initial["stdout"] or "freq: 5745" not in initial["stdout"]:
-        raise RuntimeError("B2 source must be on AX1500 at channel149")
+    if "SSID: "+a.ssid+"\n" not in initial["stdout"] or "freq: 5745" not in initial["stdout"]:
+        raise RuntimeError("contender must be on the declared AP at channel149")
     metadata = {"args": vars(a), "initial_link": initial,
                 "info": command(["iw", "dev", a.dev, "info"]),
                 "power": command(["iw", "dev", a.dev, "get", "power_save"]),
@@ -55,7 +56,7 @@ def main():
     with (folder/"events.jsonl").open("w") as events:
         while time.monotonic() + 2 < deadline and not (folder/"stop").exists():
             state = link(a.dev)
-            if "SSID: iptime5GAX1500\n" not in state["stdout"]:
+            if "SSID: "+a.ssid+"\n" not in state["stdout"]:
                 raise RuntimeError("source AP changed during B2")
             tick = time.monotonic()
             row = {"burst": len(results), "start_monotonic_s": tick,

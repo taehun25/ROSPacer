@@ -131,7 +131,7 @@ class Campaign:
             clock=qualify_pair(*[[json.loads(s) for s in (local/h/'clock.jsonl').read_text().splitlines()] for h in ['4','5']],min(stamps) if stamps else 0,max(stamps) if stamps else 0)
             summary={'name':name,'config':cfg,'commit':self.commit,'source_sha256':self.hashes,'requested_hz':hz,'clock':clock,'metrics':analyze_pair(pub,sub,clock),'telemetry':{h:analyze_telemetry(local/h/'telemetry.jsonl') for h in self.homes},'pids':pids,'duration_s':duration,'comparison_scope':'short functional smoke; no performance superiority claim; wired DDS rejected while clocks/SSH allowed'}
             summary['restoration']={h:json.loads((local/h/'wired_guard.restoration.json').read_text()) for h in self.homes}
-            summary['qdisc_after']=self.c.python('4',"import subprocess,json;print(json.loads(subprocess.check_output(['tc','-j','qdisc','show','dev','wlp2s0'],text=True)))")
+            summary['qdisc_after']=self.c.python('4',"import subprocess,json;print(subprocess.check_output(['tc','-j','qdisc','show','dev','wlp2s0'],text=True))")
             (local/'summary.json').write_text(json.dumps(summary,indent=2))
             print(json.dumps({'DONE':name,'received':summary['metrics']['unique_received'],'requested':count,'clock_validated':clock['validated'],'bound_ms':clock.get('relative_error_bound_ms'),'p95_ms':(summary['metrics']['end_to_end_latency_ms'] or {}).get('p95')}),flush=True)
         finally:

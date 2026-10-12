@@ -14,7 +14,7 @@ def ssh_extra(host,command,data=None):
     alias,account=HOSTS[host]
     return subprocess.run(['ssh','-b','192.168.0.2','-i',KEY,'-o','HostKeyAlias='+alias,'-o','StrictHostKeyChecking=yes','-o','BatchMode=yes','-o','ConnectTimeout=5',account,command],input=data,capture_output=True,timeout=60)
 
-def inventory():
+def inventory(run='w1_20261012_163000'):
     source=r'''
 import subprocess,json
 commands={'hostname':['hostnamectl'],'links':['iw','dev'],'addresses':['ip','-j','addr'],'qdisc':['tc','-j','qdisc','show'],'processes':['pgrep','-af',r'[r]un_sweep|[r]un_campaign|[i]perf3|[r]ospacer govern|[t]raffic.py'],'tools':['bash','-c','command -v iperf3; command -v iw'],'cpu':['cat','/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor']}
@@ -27,7 +27,7 @@ print(json.dumps(r))
     for h in HOSTS:
         q=ssh_extra(h,'python3 -',source.encode())
         result[h]={'rc':q.returncode,'report':json.loads(q.stdout) if q.returncode==0 else None,'stderr':q.stderr.decode()}
-    base=ROOT/'runs/w1_20261012_163000';(base/'competition_inventory.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+    base=ROOT/'runs'/run;base.mkdir(parents=True,exist_ok=True);(base/'competition_inventory.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
     print(json.dumps({h:{'rc':r['rc'],'identity':r['report']['hostname']['stdout'] if r['report'] else None,'processes':r['report']['processes'] if r['report'] else None,'stderr':r['stderr']} for h,r in result.items()},indent=2))
 
 def remote_extra(host,source):
@@ -35,14 +35,14 @@ def remote_extra(host,source):
     if q.returncode:raise RuntimeError(q.stderr.decode())
     return json.loads(q.stdout)
 
-def launch_extra(host,argv,log):
-    source='import subprocess,json;from pathlib import Path\np=Path.home()/"ros2_ws/src/large_data_1009/ROSPacer/runs/w1_20261012_163000/competition";p.mkdir(parents=True,exist_ok=True)\nf=open(p/'+repr(log)+',"w");q=subprocess.Popen('+repr(argv)+',stdin=subprocess.DEVNULL,stdout=f,stderr=subprocess.STDOUT,start_new_session=True);print(json.dumps({"pid":q.pid,"path":str(p)}))'
+def launch_extra(host,argv,log,run='w1_20261012_163000'):
+    source='import subprocess,json;from pathlib import Path\np=Path.home()/'+repr('ros2_ws/src/large_data_1009/ROSPacer/runs/'+run+'/competition')+';p.mkdir(parents=True,exist_ok=True)\nf=open(p/'+repr(log)+',"w");q=subprocess.Popen('+repr(argv)+',stdin=subprocess.DEVNULL,stdout=f,stderr=subprocess.STDOUT,start_new_session=True);print(json.dumps({"pid":q.pid,"path":str(p)}))'
     return remote_extra(host,source)
 
-def competition():
+def competition(run='w1_20261012_163000'):
     from w1_calibrate import remote,launch,fetch
     from deploy import REMOTE
-    base=ROOT/'runs/w1_20261012_163000';out=base/'competition';out.mkdir(exist_ok=True)
+    base=ROOT/'runs'/run;out=base/'competition';out.mkdir(exist_ok=True)
     C0=json.loads((base/'calibration_ready/summary.json').read_text())['C0_UDP_receiver_median_bps']
     # Repeat clean-link UDP after the two additional stations joined, then C2.
     results=[]
@@ -52,10 +52,10 @@ def competition():
         print('START '+trial,flush=True)
         extra=[]
         if trial!='clean4stations':
-            extra.append(launch_extra('4',['timeout','-k','2','44','iperf3','-s','-1','-B','192.168.0.5','-p','55301','-J'],trial+'_server.json'))
+            extra.append(launch_extra('4',['timeout','-k','2','44','iperf3','-s','-1','-B','192.168.0.5','-p','55301','-J'],trial+'_server.json',run))
             time.sleep(.4)
-            extra.append(launch_extra('5',['timeout','-k','2','42','iperf3','-c','192.168.0.5','-B','192.168.0.6','-p','55301','-u','-b',str(round(.9*C0)),'-l','1400','-t','38','-J'],trial+'_client.json'))
-        bases={h:'/home/'+('csi2' if h=='12' else 'csi')+'/'+REMOTE+'/runs/w1_20261012_163000/competition' for h in ['12','10']}
+            extra.append(launch_extra('5',['timeout','-k','2','42','iperf3','-c','192.168.0.5','-B','192.168.0.6','-p','55301','-u','-b',str(round(.9*C0)),'-l','1400','-t','38','-J'],trial+'_client.json',run))
+        bases={h:'/home/'+('csi2' if h=='12' else 'csi')+'/'+REMOTE+'/runs/'+run+'/competition' for h in ['12','10']}
         for h in bases:
             remote(h,'from pathlib import Path;Path('+repr(bases[h])+').mkdir(parents=True,exist_ok=True);print("{}")')
             argv=['timeout','-k','2','43','python3','tools/telemetry.py','--dev','wlo1' if h=='12' else 'wlp2s0','--seconds','38','--interval','.5','--out',bases[h]+'/'+trial+'_telemetry.jsonl']
@@ -73,11 +73,12 @@ def competition():
           'adaptive_estimate':None,'estimate_error':None,'reason':'No survey airtime counters; throughput response only, no20percent model validation'}
         if extra:
             for h,suffix in [('4','server'),('5','client')]:
-                raw=remote_extra(h,'import json;from pathlib import Path\np=Path.home()/"ros2_ws/src/large_data_1009/ROSPacer/runs/w1_20261012_163000/competition";print(json.dumps({"text":(p/'+repr(trial+'_'+suffix+'.json')+').read_text()}))')['text']
+                raw=remote_extra(h,'import json;from pathlib import Path\np=Path.home()/'+repr('ros2_ws/src/large_data_1009/ROSPacer/runs/'+run+'/competition')+';print(json.dumps({"text":(p/'+repr(trial+'_'+suffix+'.json')+').read_text()}))')['text']
                 (out/(trial+'_'+h+'_'+suffix+'.json')).write_text(raw)
             contender=json.loads((out/(trial+'_5_client.json')).read_text());result['contender_client_end']=contender.get('end');result['contender_error']=contender.get('error')
         results.append(result);(out/'summary.json').write_text(json.dumps(results,indent=2));print(json.dumps(result),flush=True)
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--measure',action='store_true');a=p.parse_args()
-    competition() if a.measure else inventory()
+    p=argparse.ArgumentParser();p.add_argument('--measure',action='store_true');p.add_argument('--run',default='w1_20261012_163000');a=p.parse_args()
+    if Path(a.run).name!=a.run:p.error('run must be a single folder name')
+    competition(a.run) if a.measure else inventory(a.run)

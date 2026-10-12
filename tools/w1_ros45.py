@@ -20,7 +20,7 @@ from deploy import ROOT,REMOTE
 from w1_b2 import Control,OTHER,SR2
 from w1_backpressure import analyze_telemetry
 sys.path.insert(0,str(ROOT))
-from rospacer.model import synthesize
+from rospacer.model import synthesize,identify_overhead
 from rospacer import profiles
 from rospacer.clock import qualify_pair
 from rospacer.metrics import analyze_pair,recovery_metric
@@ -28,7 +28,7 @@ from rospacer.metrics import analyze_pair,recovery_metric
 
 class Campaign:
     def __init__(self,a):
-        self.a=a;self.out=ROOT/'runs'/a.run/(('ros45_stock' if a.pinned else 'ros45')+('_bp' if a.backpressure else '_outage' if a.outage_seconds else ''));self.out.mkdir(parents=True,exist_ok=True)
+        self.a=a;self.out=ROOT/'runs'/a.run/(('ros45_stock' if a.pinned else 'ros45')+('_bp' if a.backpressure else '_outage' if a.outage_seconds else '_adaptive_diagnostic' if a.adaptive_diagnostic else ''));self.out.mkdir(parents=True,exist_ok=True)
         self.c=Control(a.ip4,a.ip5,'Wi-Fi 2',self.out)
         self.homes={'4':'/home/csilab','5':'/home/csi'};self.ips={'4':a.ip4,'5':a.ip5}
         cal=ROOT/'runs'/a.run/'calibration'
@@ -101,6 +101,14 @@ class Campaign:
         cfg['cap_application_Bps']=cfg['cap_packet_Bps']/cfg['packet_factor']
         cfg['experiment_cap_definition']='HTB packet bytes/sec exactly fraction of measured UDP payload C0; inferred DDS app cap uses provisional header factor'
         if label=='bp_default100':cfg['fq_flow_limit']=100
+        if self.a.adaptive_diagnostic:
+            r=self.c.python('5',"import sys,json;sys.path.insert(0,"+repr(self.homes['5']+'/'+REMOTE)+");from rospacer.linux import observe;print(json.dumps(observe('wlp2s0')))")
+            down=r.get('rx_Bps')
+            if not down or down<=0:raise RuntimeError('receiver PHY unavailable')
+            radio=json.loads((ROOT/'runs'/self.a.run/'radio_evidence.json').read_text())
+            inputs=radio['inputs'];cfg.update(w1_diagnostic_only=True,receiver_phy_snapshot_Bps=down,relay_in_survey=True,
+                airtime_overhead_s=identify_overhead(self.C0,inputs['tx_rate'],down,inputs['retries'],cfg['unit_bytes'],cfg['header_bytes']))
+            cfg['diagnostic_assumptions']=['raw busy excludes self TX; normalize by adding TX then subtracting it once','receiver downlink PHY snapshot, not sender RX PHY','O fitted from UDP C0 using provisional model packet geometry; no intrinsic-cost claim','self-load residual gate remains unqualified; ceiling0.9C0 bounds all changes']
         if label=='vendor':cfg.update(socket_tx_bytes=1048576,socket_rx_bytes=4194304 if rmw=='fastdds' else 10485760)
         folders={h:home+'/'+REMOTE+'/runs/'+self.a.run+'/'+self.out.name+'/'+name for h,home in self.homes.items()}
         old={};pids={};last_guard=time.monotonic()
@@ -120,8 +128,11 @@ class Campaign:
                     pids[k+h]=self.launch(h,args,folders[h],k+'.log')
                     if k=='wireguard':last_guard=time.monotonic()
             time.sleep(.5)
-            if label=='fixed' or self.a.backpressure:
-                pids['govern']=self.launch('4',['sudo','-n','timeout','-k','2','50','python3','-m','rospacer','govern','--config',folders['4']+'/config.json','--mode','fixed','--seconds','46','--trace',folders['4']+'/govern.csv'],folders['4'],'govern.log')
+            if label=='fixed' or self.a.backpressure or self.a.adaptive_diagnostic:
+                command=['sudo','-n','timeout','-k','2','50','python3','-m','tools.w1_adaptive_probe' if self.a.adaptive_diagnostic else 'rospacer']
+                if not self.a.adaptive_diagnostic:command+=['govern','--mode','fixed']
+                command+=['--config',folders['4']+'/config.json','--seconds','46','--trace',folders['4']+'/govern.csv']
+                pids['govern']=self.launch('4',command,folders['4'],'govern.log')
                 time.sleep(.5)
             for h in self.homes:
                 pids['capture'+h]=self.launch(h,['sudo','-n','timeout','-s','INT','-k','2','40','tcpdump','-i','wlp2s0','-s','160','-w',folders[h]+'/wifi.pcap','not','port','22','and','not','port','123'],folders[h],'capture.log')
@@ -153,6 +164,7 @@ class Campaign:
             clock=qualify_pair(*[[json.loads(s) for s in (local/h/'clock.jsonl').read_text().splitlines()] for h in ['4','5']],min(stamps) if stamps else 0,max(stamps) if stamps else 0)
             summary={'name':name,'config':cfg,'commit':self.commit,'source_sha256':self.hashes,'requested_hz':hz,'clock':clock,'metrics':analyze_pair(pub,sub,clock),'telemetry':{h:analyze_telemetry(local/h/'telemetry.jsonl') for h in self.homes},'pids':pids,'duration_s':duration,'comparison_scope':'short functional smoke; no performance superiority claim; wired DDS rejected while clocks/SSH allowed'}
             summary['pinned_runtime_check']=library_check
+            summary['adaptive_diagnostic_only']=self.a.adaptive_diagnostic
             if self.a.outage_seconds:
                 outage=json.loads((local/'5/outage.json').read_text())
                 summary['outage']=outage;summary['recovery']=recovery_metric(sub,outage,clock)
@@ -167,7 +179,8 @@ class Campaign:
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--run',required=True);p.add_argument('--ip4',default='192.168.0.4');p.add_argument('--ip5',default='192.168.0.5');p.add_argument('--seconds',type=float,default=15);p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--label',choices=['default','vendor','static','fixed']);p.add_argument('--pinned',action='store_true');p.add_argument('--backpressure',action='store_true');p.add_argument('--outage-seconds',type=float,default=0);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--run',required=True);p.add_argument('--ip4',default='192.168.0.4');p.add_argument('--ip5',default='192.168.0.5');p.add_argument('--seconds',type=float,default=15);p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--label',choices=['default','vendor','static','fixed']);p.add_argument('--pinned',action='store_true');p.add_argument('--backpressure',action='store_true');p.add_argument('--outage-seconds',type=float,default=0);p.add_argument('--adaptive-diagnostic',action='store_true');a=p.parse_args()
+    if a.adaptive_diagnostic and (not a.pinned or a.backpressure or a.outage_seconds):p.error('diagnostic requires pinned runtime and separate run')
     if a.outage_seconds and (a.backpressure or a.label not in ['static','fixed'] or not 0<a.outage_seconds<=10):p.error('outage requires static/fixed smoke, <=10seconds')
     if a.backpressure:a.seconds=30
     if Path(a.run).name!=a.run or (not a.backpressure and not 5<=a.seconds<=20):p.error('single run folder and smoke duration5..20s')
@@ -175,7 +188,7 @@ def main():
     try:
         c.c.connect(OTHER);c.deploy()
         for rmw in [a.middleware] if a.middleware else ['fastdds','cyclonedds']:
-            for label in ['bp_default100','bp_design'] if a.backpressure else [a.label] if a.label else ['default','vendor','static','fixed']:c.trial(rmw,label)
+            for label in ['adaptive_diagnostic'] if a.adaptive_diagnostic else ['bp_default100','bp_design'] if a.backpressure else [a.label] if a.label else ['default','vendor','static','fixed']:c.trial(rmw,label)
     finally:c.c.connect(SR2)
 
 

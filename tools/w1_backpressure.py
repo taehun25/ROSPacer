@@ -68,7 +68,8 @@ def analyze_telemetry(path):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');p.add_argument('--outage-seconds',type=float,default=0);a=p.parse_args()
+    if a.outage_seconds and (a.mode!='smoke' or a.only_label not in ('static','fixed') or not 0<a.outage_seconds<=10):p.error('outage requires smoke static/fixed and <=10seconds')
     base=ROOT/'runs'/a.run
     cal=json.loads((base/'calibration_ready/summary.json').read_text())
     C0=cal['C0_UDP_receiver_median_bps']/8
@@ -158,6 +159,8 @@ def main():
             if profiled or label=='vendor':env+=('export FASTRTPS_DEFAULT_PROFILES_FILE='+b+'/middleware.xml RMW_FASTRTPS_USE_QOS_FROM_XML=1; ' if rmw=='fastdds' else 'export CYCLONEDDS_URI=file://'+b+'/middleware.xml; ')
             subcmd=env+'cd '+HOMES['10']+'/'+REMOTE+'; exec timeout -k 3 48 python3 tools/traffic.py sub --count '+str(count)+' --hz '+str(hz)+' --seconds 43 --out '+b+'/sub.json'
             pids['sub']=launch('10',['bash','-c',subcmd],HOMES['10']+'/'+REMOTE,b+'/sub.log')['pid']
+            if a.outage_seconds:
+                pids['outage']=launch('10',['timeout','-k','3','28','python3','tools/w1_outage.py','--seconds',str(a.outage_seconds),'--delay','8','--out',b+'/outage.json'],HOMES['10']+'/'+REMOTE,b+'/outage.log')['pid']
             time.sleep(.5)
             b=HOMES['12']+'/'+REMOTE+'/runs/'+a.run+'/'+name
             env=setup(rmw,'12')
@@ -175,6 +178,12 @@ def main():
                 'clock_validated':False,'latency_excluded_reason':'No independent wired clock reference; host10 unsynchronised in preflight',
                 'vendor_definition':('Fast DDS supported LARGE_DATA built-ins plus 1MiB send/4MiB receive sockets' if rmw=='fastdds' else 'Cyclone native fragmentation/WHC plus 1MiB send/10MiB receive sockets') if label=='vendor' else None}
             summary['qdisc_after']=json.loads(shell('12','tc -j qdisc show dev wlo1')['stdout'])
+            if a.outage_seconds:
+                events=json.loads((local/'10/outage.json').read_text());end=events['outage_ended_monotonic_ns']
+                arrivals=[r['arrival_monotonic_ns'] for r in sub.get('records',[]) if r.get('arrival_monotonic_ns',0)>=end]
+                summary['outage']={'events':events,'actual_outage_seconds':(end-events['outage_started_monotonic_ns'])/1e9,
+                    'first_arrival_after_restore_s':(min(arrivals)-end)/1e9 if arrivals else None,
+                    'definition':'receiver monotonic first-arrival gap after UDP rule removal; not complete backlog recovery or cross-host E2E delay'}
             (local/'summary.json').write_text(json.dumps(summary,indent=2),encoding='utf-8');summaries.append(summary)
             print(json.dumps({'DONE':name,'metrics':metrics,'telemetry':summary['telemetry']}),flush=True)
             for h in HOMES:shell(h,'sudo -n /sbin/sysctl -w net.core.rmem_max='+str(old_buffers[h]['rmem_max'])+' net.core.wmem_max='+str(old_buffers[h]['wmem_max']))

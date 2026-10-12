@@ -9,7 +9,8 @@ def inspect(path):
     magic=data[:4];endian='<' if magic in (b'\xd4\xc3\xb2\xa1',b'\x4d\x3c\xb2\xa1') else '>' if magic in (b'\xa1\xb2\xc3\xd4',b'\xa1\xb2\x3c\x4d') else None
     if endian is None:raise ValueError('unsupported capture format')
     link=struct.unpack(endian+'IHHIIII',data[:24])[-1];pos=24
-    result={'captured_packets':0,'IPv4_fragment_packets':0,'max_IP_length':0,'RTPS_packets':0,'user_DATA_FRAG_packets':0,'user_udp_source_ports':{},'tcp_payload_endpoints':{},'udp_user_IP_bytes':0,'linktype':link}
+    result={'captured_packets':0,'IPv4_fragment_packets':0,'max_IP_length':0,'max_UDP_length':0,'RTPS_packets':0,'user_DATA_FRAG_packets':0,'user_udp_source_ports':{},'user_fragment_sizes':{},'tcp_payload_endpoints':{},'udp_user_IP_bytes':0,'linktype':link,'user_IP_fragment_first_packets':0}
+    unique_fragments=set()
     while pos+16<=len(data):
         sec,usec,n,orig=struct.unpack(endian+'IIII',data[pos:pos+16]);pos+=16;frame=data[pos:pos+n];pos+=n;result['captured_packets']+=1
         off={1:14,113:16,276:20,101:0}.get(link)
@@ -29,17 +30,26 @@ def inspect(path):
                 key=f'{src}:{sport}->{dst}:{dport}';result['tcp_payload_endpoints'][key]=result['tcp_payload_endpoints'].get(key,0)+payload_len
             continue
         if ip[9]!=17 or transport[8:12]!=b'RTPS':continue
+        result['max_UDP_length']=max(result['max_UDP_length'],struct.unpack('!H',transport[4:6])[0])
         result['RTPS_packets']+=1;payload=transport[8:];p=20;user=False
         while p+4<=len(payload):
             sid,flags=payload[p],payload[p+1];size=struct.unpack(('<' if flags&1 else '>')+'H',payload[p+2:p+4])[0];body=payload[p+4:]
             if sid in (0x15,0x16) and len(body)>=12 and body[11] in (0x02,0x03):
                 user=True
                 if sid==0x16:result['user_DATA_FRAG_packets']+=1
+                if sid==0x16 and len(body)>=32:
+                    order='<' if flags&1 else '>'
+                    start=struct.unpack(order+'I',body[20:24])[0]
+                    size_=struct.unpack(order+'H',body[26:28])[0]
+                    key=str(size_);result['user_fragment_sizes'][key]=result['user_fragment_sizes'].get(key,0)+1
+                    unique_fragments.add((body[8:12],body[12:20],start))
             if size==0:break
             p+=4+size
         if user:
             key=str(sport);result['user_udp_source_ports'][key]=result['user_udp_source_ports'].get(key,0)+1
             result['udp_user_IP_bytes']+=length
+            if frag&0x3fff:result['user_IP_fragment_first_packets']+=1
+    result['unique_user_fragment_keys']=len(unique_fragments)
     result['qualification']='Sender capture records offered IP packets before over-the-air delivery; user ports decoded only from DATA/DATA_FRAG entity kind; TCP payload includes discovery/control if not separately decoded.'
     return result
 

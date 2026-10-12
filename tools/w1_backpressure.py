@@ -93,6 +93,7 @@ def main():
                 print('SKIP existing '+name,flush=True);continue
             hz=loadratio*C0/1048576;count=math.ceil(30*hz)
             cfg=synthesize(1048576,hz,1,C0,rtt,1)
+            if rmw=='cyclonedds':cfg['fragment_bytes']=cfg['unit_bytes']-max(68,cfg['header_bytes'])
             cfg.update(dev='wlo1',peers=['192.168.0.4'],middleware=rmw,interval_s=.2,relay_in_survey=None,airtime_overhead_s=None,classifier='rtps_ipv4_no_options')
             cfg['cap_packet_Bps']=(.5 if a.mode=='backpressure' else .9)*C0
             cfg['cap_application_Bps']=cfg['cap_packet_Bps']/cfg['packet_factor']
@@ -157,6 +158,7 @@ def main():
             env=setup(rmw,'10')
             if label=='vendor' and rmw=='fastdds':env+='export FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA; '
             if profiled or label=='vendor':env+=('export FASTRTPS_DEFAULT_PROFILES_FILE='+b+'/middleware.xml RMW_FASTRTPS_USE_QOS_FROM_XML=1; ' if rmw=='fastdds' else 'export CYCLONEDDS_URI=file://'+b+'/middleware.xml; ')
+            if label=='vendor' and rmw=='fastdds':env+='export RMW_FASTRTPS_USE_QOS_FROM_XML=0; '
             subcmd=env+'cd '+HOMES['10']+'/'+REMOTE+'; exec timeout -k 3 48 python3 tools/traffic.py sub --count '+str(count)+' --hz '+str(hz)+' --seconds 43 --out '+b+'/sub.json'
             pids['sub']=launch('10',['bash','-c',subcmd],HOMES['10']+'/'+REMOTE,b+'/sub.log')['pid']
             if a.outage_seconds:
@@ -166,6 +168,7 @@ def main():
             env=setup(rmw,'12')
             if label=='vendor' and rmw=='fastdds':env+='export FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA; '
             if profiled or label=='vendor':env+=('export FASTRTPS_DEFAULT_PROFILES_FILE='+b+'/middleware.xml RMW_FASTRTPS_USE_QOS_FROM_XML=1; ' if rmw=='fastdds' else 'export CYCLONEDDS_URI=file://'+b+'/middleware.xml; ')
+            if label=='vendor' and rmw=='fastdds':env+='export RMW_FASTRTPS_USE_QOS_FROM_XML=0; '
             cmd=env+'cd '+HOMES['12']+'/'+REMOTE+'; timeout -k 3 46 python3 tools/traffic.py pub --count '+str(count)+' --hz '+str(hz)+' --seconds 30 --discovery-seconds 8 --drain-seconds 5 --continue-on-publish-error --out '+b+'/pub.json > '+b+'/pub.log 2>&1'
             pubresult=shell('12',cmd,False)
             # Complete all bounded samplers and governor before collecting/restoring.

@@ -9,7 +9,11 @@ def main():
         home={'12':'/home/csi2','10':'/home/csi'}[h];dev={'12':'wlo1','10':'wlp2s0'}[h]
         folder=home+'/'+REMOTE+'/runs/'+a.run
         args=['sudo','-n','python3',home+'/'+REMOTE+'/tools/w1_session.py',a.mode,'--folder',folder,'--dev',dev]
-        q=ssh(h,shlex.join(args));report={'rc':q.returncode,'stdout':q.stdout.decode(),'stderr':q.stderr.decode()}
+        if h=='10' and a.mode=='end':
+            code='from pathlib import Path;import time,json\np=Path('+repr(folder)+');(p/"end_session").write_text("end");deadline=time.monotonic()+12\nwhile not(p/"restoration.json").exists() and time.monotonic()<deadline:time.sleep(.3)\nprint((p/"restoration.json").read_text())'
+            q=ssh(h,'python3 -',code.encode())
+        else:q=ssh(h,shlex.join(args))
+        report={'rc':q.returncode,'stdout':q.stdout.decode(),'stderr':q.stderr.decode()}
         return h,report
     with ThreadPoolExecutor(2) as pool:result=dict(pool.map(one,['12','10']))
     folder=ROOT/'runs'/a.run;folder.mkdir(parents=True,exist_ok=True)

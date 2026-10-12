@@ -83,7 +83,8 @@ def main():
             q=ssh('12','python3 -c '+shlex.quote(script),(ROOT/'tools/w1_b2_worker.py').read_bytes());assert q.returncode==0,q.stderr
             workers['server']=start('10',['timeout','-k','2','205','iperf3','-s','-B','192.168.0.4','-p','55461','-J'],bg['10'],'server.jsonl')
             workers['worker']=start('12',['timeout','-k','2','200','python3',homes['12']+'/'+REMOTE+'/tools/w1_b2_worker.py','--ssid',SR2,'--dev','wlo1','--bind','192.168.0.3','--peer','192.168.0.4','--port','55461','--seconds','175','--delay','20','--out',bg['12'],'--source-commit',subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()],bg['12'],'worker.log')
-            anchor=remote('12',"import time,json;print(json.dumps({'wall_ns':time.time_ns(),'mono':time.monotonic()}))");(pair.out/'background_start.json').write_text(json.dumps({'workers':workers,'anchor':anchor},indent=2))
+            tick=time.monotonic();anchor=remote('12',"import time,json;print(json.dumps({'wall_ns':time.time_ns(),'mono':time.monotonic()}))");ended=time.monotonic();anchor.update(pc_midpoint_s=(tick+ended)/2,roundtrip_s=ended-tick)
+            (pair.out/'background_start.json').write_text(json.dumps({'workers':workers,'anchor':anchor},indent=2))
             c.connect(OTHER);time.sleep(13)
             for n in ['B2_1','B2_2','B2_3']:
                 trials.append(pair.trial(n));(pair.out/'progress.json').write_text(json.dumps(trials,indent=2))
@@ -94,6 +95,10 @@ def main():
                 if status['done']:break
                 time.sleep(.5)
             summary=json.loads(read('12',bg['12']+'/summary.json'))
+            offset=anchor['pc_midpoint_s']-anchor['mono']
+            for r in trials:
+                r['successful_background_bursts_overlapping_call']=sum(b['start_monotonic_s']+offset<r['pc_call_end_s'] and b['end_monotonic_s']+offset>r['pc_call_start_s'] for b in summary['bursts'] if b.get('rc')==0 and not b.get('error'))
+                r['overlap_qualification']='coarse SSH midpoint, not a qualified cross-host latency clock'
             (pair.out/'background_summary.json').write_text(json.dumps(summary,indent=2))
             (pair.out/'background_server.jsonl').write_text(read('10',bg['10']+'/server.jsonl'))
             if not any(b.get('rc')==0 and not b.get('error') for b in summary['bursts']):raise RuntimeError('no successful B2 bursts')

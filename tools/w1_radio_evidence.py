@@ -46,14 +46,22 @@ def main():
     for label in ['b2','c2']:
         folder=base/label
         if not folder.exists():continue
+        condition_cfg=dict(cfg)
+        if label=='c2' and all((folder/(n+'_summary.json')).exists() for n in ['quiet1','quiet2','quiet3']):
+            quiet=[steady(folder,n,4) for n in ['quiet1','quiet2','quiet3']]
+            rates=[json.loads((folder/(n+'_summary.json')).read_text())['receiver_bps']/8 for n in ['quiet1','quiet2','quiet3']]
+            fit=dict(capacity=statistics.median(rates),tx_rate=statistics.median(d['tx_Bps'] for d in quiet),rx_rate=statistics.median(d['rx_Bps'] for d in quiet),retries=statistics.median(d['retries']/d['packets'] for d in quiet),unit=1400,header=0)
+            try:condition_cfg['airtime_overhead_s']=identify_overhead(**fit);result['c2_calibration']={'inputs':fit,'conditional_O_s':condition_cfg['airtime_overhead_s']}
+            except ValueError as e:result['c2_calibration']={'inputs':fit,'error':str(e)}
         for f in sorted(folder.glob('*_summary.json')):
             n=f.name[:-13];trial=json.loads(f.read_text());d=steady(folder,n)
             row={'condition':label,'trial':n,'measured_receiver_bps':trial['receiver_bps'],'delta':d,'qualified_prediction_bps':None,'qualified_error_percent':None}
-            try:row['strict_model_candidate']=adaptive_rate(cfg,d,True)
+            row['conditional_O_s']=condition_cfg['airtime_overhead_s']
+            try:row['strict_model_candidate']=adaptive_rate(condition_cfg,d,True)
             except ValueError as e:row['strict_model_error']=str(e)
             # Diagnostic counterfactual, explicitly unqualified: beta subtraction
             # treating raw busy as excluding self TX. No mutation of raw data.
-            retry=d['retries']/max(1,d['packets']);relay=(1+retry)*d['bytes']/1400*(o+1428/d['rx_Bps']);beta=(d['busy_s']-relay)/d['active_s'];theta=(1+retry)/1400*(2*o+1428/d['tx_Bps']+1428/d['rx_Bps']);candidate=(1-max(0,min(1,beta)))/theta*8
+            oo=condition_cfg['airtime_overhead_s'];retry=d['retries']/max(1,d['packets']);relay=(1+retry)*d['bytes']/1400*(oo+1428/d['rx_Bps']);beta=(d['busy_s']-relay)/d['active_s'];theta=(1+retry)/1400*(2*oo+1428/d['tx_Bps']+1428/d['rx_Bps']);candidate=(1-max(0,min(1,beta)))/theta*8
             row.update(alternative_unqualified_beta_unclipped=beta,alternative_unqualified_prediction_bps=candidate,alternative_unqualified_error_percent=100*abs(candidate-trial['receiver_bps'])/trial['receiver_bps'],reason='self-load failed survey semantics; no qualified prediction or20percent acceptance')
             result['model_conditions'].append(row)
     (base/'radio_evidence.json').write_text(json.dumps(result,indent=2))

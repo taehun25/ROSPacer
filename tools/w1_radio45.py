@@ -65,7 +65,9 @@ class Pair:
         args = ['iperf3','-c',self.ip['5'],'-B',self.ip['4'],'-p','55460','-t',str(seconds),'-w','1048576','-J']
         if udp:
             args += ['-u','-b',str(rate or 0),'-l','1400']
+        pc_start=time.monotonic()
         result = self.c.python('4',"import subprocess,json,time\na=time.monotonic();q=subprocess.run("+repr(args)+",capture_output=True,text=True,timeout="+str(seconds+6)+");print(json.dumps({'rc':q.returncode,'stdout':q.stdout,'stderr':q.stderr,'start_mono':a,'end_mono':time.monotonic()}))")
+        pc_end=time.monotonic()
         (self.out/(name+'_client.json')).write_text(json.dumps(result,indent=2))
         time.sleep(6)
         telemetry = {}
@@ -78,6 +80,7 @@ class Pair:
         elapsed = sum(r['seconds'] for r in intervals)
         bytes_received = sum(r['bytes'] for r in intervals)
         summary = {'name':name,'udp':udp,'requested_bps':rate,'client_rc':result['rc'],
+                   'pc_call_start_s':pc_start,'pc_call_end_s':pc_end,
                    'client_error':cli.get('error'),'server_error':srv.get('error'),
                    'receiver_interval_bytes':bytes_received,'receiver_interval_seconds':elapsed,
                    'receiver_bps':8*bytes_received/elapsed if elapsed else None,'before':before,

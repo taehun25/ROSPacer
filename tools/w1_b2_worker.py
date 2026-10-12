@@ -72,15 +72,17 @@ def main():
                 row.update(rc=None, error=str(e))
             row.update(end_monotonic_s=time.monotonic(), end_wall_ns=time.time_ns())
             row["elapsed_s"] = row["end_monotonic_s"] - tick
+            row["period_overrun_s"] = max(0, time.monotonic()-(tick+4))
             results.append(row)
             events.write(json.dumps(row)+"\n")
             events.flush()
-            # Off time starts after the bounded iperf process has exited. The
-            # JSON intervals preserve actual transfer timing and handshake cost.
-            time.sleep(max(0, min(2, deadline-time.monotonic())))
+            # Keep successive starts four seconds apart. Sleeping two seconds
+            # after process exit also counted the handshake as extra off time.
+            # Actual payload on/off still requires the receiver interval logs.
+            time.sleep(max(0, min(tick+4-time.monotonic(), deadline-time.monotonic())))
     summary = {"start_monotonic_s": start, "end_monotonic_s": time.monotonic(),
                "bursts": results, "final_link": link(a.dev),
-               "scope": "iperf requested2s on/2s off; use interval durations for actual duty cycle; no valid airtime estimate"}
+               "scope": "iperf requested2s payload at4second start periods; inspect intervals/overruns for actual duty cycle; no valid airtime estimate"}
     (folder/"summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps({"bursts": len(results), "successful_bursts": sum(r.get("rc") == 0 and not r.get("error") for r in results)}), flush=True)
 

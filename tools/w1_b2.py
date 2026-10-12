@@ -92,11 +92,11 @@ def pair_check():
     return reports
 
 
-def trial(run, name, out):
+def trial(run, name, out, label='b2'):
     print("START "+name, flush=True)
     before = pair_check()
     homes = {"12": "/home/csi2", "10": "/home/csi"}
-    bases = {h: homes[h]+"/"+REMOTE+"/runs/"+run+"/b2" for h in homes}
+    bases = {h: homes[h]+"/"+REMOTE+"/runs/"+run+"/"+label for h in homes}
     for h in homes:
         remote(h, "from pathlib import Path;Path("+repr(bases[h])+").mkdir(parents=True,exist_ok=True);print('{}')")
         args = ["timeout", "-k", "2", "43", "python3", "tools/telemetry.py", "--dev", "wlo1" if h == "12" else "wlp2s0",
@@ -132,20 +132,23 @@ def main():
     p.add_argument("--ip4", required=True)
     p.add_argument("--ip5", required=True)
     p.add_argument("--interface", default="Wi-Fi 2")
+    p.add_argument("--label", default="b2")
     a = p.parse_args()
     for s in [a.ip4, a.ip5]:
         if ipaddress.ip_address(s).version != 4:
             p.error("IPv4 required")
     if Path(a.run).name != a.run:
         p.error("run must be a single folder name")
-    out = ROOT/"runs"/a.run/"b2"
+    if Path(a.label).name != a.label:
+        p.error("label must be a single folder name")
+    out = ROOT/"runs"/a.run/a.label
     out.mkdir(parents=True, exist_ok=False)
     c = Control(a.ip4, a.ip5, a.interface, out)
     source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     results = []
     worker_path = "/home/csi/"+REMOTE+"/tools/w1_b2_worker.py"
-    remote_out = "/home/csi/"+REMOTE+"/runs/"+a.run+"/b2_contender"
-    server_out = "/home/csilab/"+REMOTE+"/runs/"+a.run+"/b2_server"
+    remote_out = "/home/csi/"+REMOTE+"/runs/"+a.run+"/"+a.label+"_contender"
+    server_out = "/home/csilab/"+REMOTE+"/runs/"+a.run+"/"+a.label+"_server"
     try:
         c.connect(OTHER)
         inventories = {}
@@ -166,7 +169,7 @@ def main():
         if q.returncode:
             raise RuntimeError(q.stderr.decode())
         c.connect(SR2)
-        results.append(trial(a.run, "clean_otherAP_idle", out))
+        results.append(trial(a.run, "clean_otherAP_idle", out, a.label))
         (out/"progress.json").write_text(json.dumps(results, indent=2))
         c.connect(OTHER)
         anchor_before = c.anchor("5")
@@ -179,7 +182,7 @@ def main():
         # Ensure the delayed worker has started before the first measurement.
         time.sleep(11)
         for name in ["B2_1", "B2_2", "B2_3"]:
-            results.append(trial(a.run, name, out))
+            results.append(trial(a.run, name, out, a.label))
             (out/"progress.json").write_text(json.dumps(results, indent=2))
         c.connect(OTHER)
         c.python("5", "from pathlib import Path;Path("+repr(remote_out+"/stop")+").write_text('stop');print('{}')")

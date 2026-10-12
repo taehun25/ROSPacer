@@ -1,5 +1,6 @@
 """Report channel149 measurements separately from the preserved channel36 run."""
 import html
+import csv
 import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
@@ -29,10 +30,11 @@ def num(value):
 def main():
     cal = read(BASE/'calibration_ready/summary.json', {})
     c2 = read(BASE/'competition/summary.json', [])
-    b2 = read(BASE/'b2/summary.json', {})
+    b2_folder = BASE/('b2_fixedperiod' if (BASE/'b2_fixedperiod').exists() else 'b2')
+    b2 = read(b2_folder/'summary.json', {})
     end = read(BASE/'end_receipt.json', {})
     restored = bool(end) and all(r.get('rc') == 0 and json.loads(r.get('stdout', '{}')).get('restored') for r in end.values())
-    trials = b2.get('trials', read(BASE/'b2/progress.json', []))
+    trials = b2.get('trials', read(b2_folder/'progress.json', []))
     stage = read(BASE/'stage_sources.json', {})
     when = datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M KST')
     body = '<h1>W1 · 채널149 추가 교정 및 B2</h1><p>갱신 '+when+'</p><p><strong>W1 전체 완료 아님.</strong> 기존 36번 측정과 새 149번 결과를 구분하여 보존한다.</p>'
@@ -62,13 +64,29 @@ def main():
     if wifi:
         body += '<section><h2>실제 Wi-Fi · HTB 200 Mb/s</h2>'+table(['조건', 'UDP 수신 payload Mb/s', 'HTB class 정상 구간 Mb/s', 'fq drop 최대', '종료 root'], [(r['name'], num(r['C_receiver_Mbps']), num(r.get('class_steady_Mbps')), r.get('fq_drop_max'), ','.join(q['kind'] for q in r['root_after'])) for r in wifi])+'<p>각10초, 명시1 MiB 소켓의 별도 진단이다. baseline이200 Mb/s를 넘고, HTB class의 byte 증가율로 상한을 확인한다. payload 수신률은 IP/UDP·링크 헤더 등으로 class 전송률보다 작다. 한 번의 단기 관측이며 모든 조건의 상한 정확도 또는 DDS 역압 의미론을 입증하지 않는다. 커널 상한은 진단 종료 후 복원한다.</p></section>'
     body += '<section><h2>B2 · 별도 AP의 같은 채널 트래픽</h2>'+table(['조건', '12→10 수신 Mb/s', '동시에 진행한 성공 burst 수', '대략적 시각 대응 오차(s)'], [(r['trial'], num(r['receiver_bps']/1e6 if r.get('receiver_bps') else None), r.get('successful_contender_bursts_overlapping_call', '집계 대기'), num(r.get('campaign_clock_mapping_uncertainty_s'))) for r in trials])
-    body += '<p>5→4 UDP b=0을 요청2초 전송·종료 뒤2초 휴지로 반복한다. iperf 시작 협상 및 실제 전송 길이는 burst별 interval JSON과 단조 시각 로그로 검증한다. 관리 PC는 AX1500에서 유한 시간 작업을 준비하고 SR2로 복귀한 뒤 본 링크를 측정한다. 측정 중 AP 간 제어 트래픽을 반복하지 않는다. 각 burst 및 전체 작업 모두 종료 시간 제한이 있다.</p>'
+    body += '<p>5→4 UDP b=0을 요청2초 전송·4초 시작 간격으로 반복한다. 초기 구현은 종료 뒤2초 휴지하여 협상 시간까지 더해 주기가 약4.4초였다. 첫3회는 b2 폴더에 보존했고 보정한 반복은 b2_fixedperiod에 별도 저장한다. 실제 전송 길이는 burst별 interval JSON과 단조 시각 로그로 검증한다. 관리 PC는 AX1500에서 유한 시간 작업을 준비하고 SR2로 복귀한 뒤 본 링크를 측정한다. 각 burst 및 전체 작업 모두 종료 시간 제한이 있다.</p>'
     if b2:
         bursts = b2['contender']['bursts']
         ok = sum(r.get('rc') == 0 and not r.get('error') for r in bursts)
         body += '<p>간섭 source 성공 burst '+str(ok)+'/'+str(len(bursts))+'개. 호스트 시계 간 지연을 계산하지 않았다. SSH 왕복 시간으로 단조 시계를 대략 대응한 것은 캠페인 동시 진행 확인용이며, proposal의 0.2 ms 시계 자격을 충족하는 근거가 아니다.</p>'
     else:
         body += '<p><strong>B2 아직 완료 아님:</strong> '+esc(stage.get('status', '추가 장비 연결·실행 대기'))+'</p>'
+    bp_rows = []
+    for path in sorted(BASE.glob('*_bp_*/summary.json')):
+        r = read(path)
+        pub = read(path.parent/'12/pub.json', {})
+        start = pub.get('measurement_started_ns', 0)/1e9
+        end_time = pub.get('measurement_ended_ns', 0)/1e9
+        points = []
+        for row in csv.DictReader((path.parent/'12/govern.csv').open()):
+            for c in json.loads(row['class_json']):
+                if c.get('handle') == '7ac0:10' and start+3 <= float(row['monotonic_s']) <= end_time-1:
+                    points.append((float(row['monotonic_s']), c['bytes']))
+        rate = 8*(points[-1][1]-points[0][1])/(points[-1][0]-points[0][0])/1e6 if len(points)>1 else None
+        m = r['metrics']
+        bp_rows.append((r['name'], r.get('calibration_label'), num(r['C0_Bps']*8/1e6), f"{m['requested']}/{m['publish_succeeded']}/{m['unique_received']}", num(m['publish_duration_ms']['p50']), num(rate), r['telemetry']['12']['fq_drop_max']))
+    if bp_rows:
+        body += '</section><section><h2>149번 · 새 교정값의 W1 역압</h2>'+table(['run', '교정 입력', 'C0 Mb/s', '예정/발행 성공/수신', 'publish p50 ms', 'HTB class Mb/s', 'fq drop'], bp_rows)+'<p>1 MiB/KEEP_ALL/30초, 요청0.8C0와 HTB0.5C0, flow_limit100/설계 값을 비교한다. 별도1 MiB 소켓 교정값을 입력으로 사용한다. 동일 run의 소켓 메모리·publish·UDP 오류·qdisc 로그를 보존한다. 대기만 관측된다고 전체 인과 경로나 모든 조건의 완전 전달을 입증한 것은 아니다.</p>'
     body += '</section><section><h2>복원·남은 항목</h2><p>12/10 설정 복원: <strong>'+('확인' if restored else '세션 진행 중 또는 최종 확인 대기')+'</strong>.</p><p>active/busy/tx 통계, AP 중계 보정, 자기 부하 검증, 검증된 시간 동기, B2/C2의 모델 예측 오차 판정은 여전히 미달성이다. 새로운 채널 조건은 무선 시간 계수기 결측을 해결하지 않는다. 적응형 제어를 완료했다고 표시하지 않는다.</p><pre>'+esc(json.dumps(stage, ensure_ascii=False, indent=2))+'</pre></section>'
     import os
     body += '<p><a href="'+Path(os.path.relpath(BASE, OUT.parent)).as_posix()+'">149번 원자료 폴더</a> · <a href="W1 구현 전제 검증_261012.html">기존 36번 W1 보고서</a></p>'

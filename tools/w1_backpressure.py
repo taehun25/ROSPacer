@@ -1,5 +1,5 @@
 """Bounded paired W1 runs; preserves failed publishes, sockets, qdisc and sources."""
-import argparse,io,json,math,shlex,statistics,tarfile,time
+import argparse,io,json,math,shlex,statistics,tarfile,time,subprocess,hashlib
 from pathlib import Path
 from deploy import ROOT,REMOTE,ssh
 from w1_calibrate import remote,launch,fetch
@@ -70,6 +70,8 @@ def analyze_telemetry(path):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--run',required=True);p.add_argument('--mode',choices=['backpressure','smoke'],default='backpressure');p.add_argument('--middleware',choices=['fastdds','cyclonedds']);p.add_argument('--only-label');p.add_argument('--suffix',default='');p.add_argument('--outage-seconds',type=float,default=0);p.add_argument('--calibration-label',default='calibration_ready');p.add_argument('--capture',action='store_true');a=p.parse_args()
     if a.outage_seconds and (a.mode!='smoke' or a.only_label not in ('static','fixed') or not 0<a.outage_seconds<=10):p.error('outage requires smoke static/fixed and <=10seconds')
+    source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    source_hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [Path(__file__),ROOT/'rospacer/profiles.py',ROOT/'rospacer/model.py',ROOT/'rospacer/linux.py',ROOT/'tools/traffic.py']}
     base=ROOT/'runs'/a.run
     if Path(a.calibration_label).name!=a.calibration_label:p.error('single calibration folder name required')
     cal=json.loads((base/a.calibration_label/'summary.json').read_text())
@@ -182,8 +184,8 @@ def main():
                 'clock_validated':False,'latency_excluded_reason':'No independent wired clock reference; host10 unsynchronised in preflight',
                 'vendor_definition':('Fast DDS supported LARGE_DATA built-ins plus 1MiB send/4MiB receive sockets' if rmw=='fastdds' else 'Cyclone native fragmentation/WHC plus 1MiB send/10MiB receive sockets') if label=='vendor' else None}
             summary['qdisc_after']=json.loads(shell('12','tc -j qdisc show dev wlo1')['stdout'])
-            import subprocess
-            summary['source_commit']=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+            summary['source_commit']=source_commit
+            summary['campaign_source_sha256']=source_hashes
             summary['calibration_label']=a.calibration_label
             if a.outage_seconds:
                 events=json.loads((local/'10/outage.json').read_text());end=events['outage_ended_monotonic_ns']

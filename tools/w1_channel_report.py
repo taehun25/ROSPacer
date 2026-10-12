@@ -1,6 +1,7 @@
 """Report channel149 measurements separately from the preserved channel36 run."""
 import html
 import csv
+import base64
 import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
@@ -59,6 +60,10 @@ def main():
             delta = rows[-1]['udp_global']['RcvbufErrors']-rows[0]['udp_global']['RcvbufErrors'] if rows else None
             buffered_rows.append((r['name'], num(r.get('receiver_bps', 0)/1e6), delta))
         body += '<section><h2>별도 1 MiB 소켓 교정</h2>'+table(['조건', '수신 payload Mb/s', '10번 UdpRcvbufErrors 증가'], buffered_rows)+'<p>iperf -w1048576을 명시하고 커널 상한을 임시로 1 MiB로 올렸다. 기존 C2/B2의 기본 버퍼 조건과 구분한다. 이 결과가 모든 조건의 무선 몫 또는 무손실 보장 전송률이라는 주장은 하지 않는다. 커널 상한 복원 영수증은 buffer_calibration_restoration.json에 보관했다.</p></section>'
+    fit = read(BASE/'conditional_model_fit.json', {})
+    if fit:
+        o = fit.get('conditional_O_s')
+        body += '<section><h2>식(1)의 조건부 입력</h2><p>1 MiB 소켓의 UDP1400 B 교정과 송신 PHY·수신 단말의 하향 PHY·재시도 계수로 맞춘 유효 O는 '+num(o*1e6 if o is not None else None)+' µs다. aggregation·외부 점유율 등의 효과를 분리하지 못했으므로 순수 물리 헤더/ACK 비용으로 식별한 것은 아니다. 이 baseline에 맞춘 값만으로 B2/C2 예측 정확도가 검증되지는 않는다. 무선 시간 계수기는 결측이며, 결측을0으로 넣지 않았다.</p></section>'
     body += '<section><h2>C2 · 동일 AP 경쟁 트래픽</h2>'+table(['조건', '12→10 수신 Mb/s', '5→4 요청 Mb/s'], [(r['trial'], num(r['receiver_bps']/1e6), num(r['contender_requested_bps']/1e6)) for r in c2])+'<p>4/5는 SR2에 연결하고 5→4에 0.9C0 UDP 부하를 넣는다. 무선 시간 계수기 결측으로 모델 추정 몫과 20% 오차 기준은 판정하지 못한다.</p></section>'
     wifi = read(BASE/'wifi_probe/summary.json', [])
     if wifi:
@@ -69,6 +74,9 @@ def main():
         bursts = b2['contender']['bursts']
         ok = sum(r.get('rc') == 0 and not r.get('error') for r in bursts)
         body += '<p>간섭 source 성공 burst '+str(ok)+'/'+str(len(bursts))+'개. 호스트 시계 간 지연을 계산하지 않았다. SSH 왕복 시간으로 단조 시계를 대략 대응한 것은 캠페인 동시 진행 확인용이며, proposal의 0.2 ms 시계 자격을 충족하는 근거가 아니다.</p>'
+        figure = b2_folder/'B2_measurements.png'
+        if figure.exists():
+            body += '<figure><img style="width:100%;height:auto" alt="B2 구간 수신률과 실제 burst 시간" src="data:image/png;base64,'+base64.b64encode(figure.read_bytes()).decode()+'"><figcaption>수신 처리량과 source의 전송 시간은 각각의 단조 시계에서 계산했다. 두 호스트의 정확한 위상 대응이나 airtime 추정 그래프가 아니다. 각 조건3회는 통계적 성능 보장의 근거로 사용하지 않는다.</figcaption></figure>'
     else:
         body += '<p><strong>B2 아직 완료 아님:</strong> '+esc(stage.get('status', '추가 장비 연결·실행 대기'))+'</p>'
     bp_rows = []
@@ -84,12 +92,18 @@ def main():
                     points.append((float(row['monotonic_s']), c['bytes']))
         rate = 8*(points[-1][1]-points[0][1])/(points[-1][0]-points[0][0])/1e6 if len(points)>1 else None
         m = r['metrics']
-        bp_rows.append((r['name'], r.get('calibration_label'), num(r['C0_Bps']*8/1e6), f"{m['requested']}/{m['publish_succeeded']}/{m['unique_received']}", num(m['publish_duration_ms']['p50']), num(rate), r['telemetry']['12']['fq_drop_max']))
+        qualification = '초기1404 B: 재전송 우회 위험' if r['rmw']=='cyclonedds' and 'repairfix' not in r['name'] else ('1388 B 캡처·class 확인' if 'repairfix' in r['name'] else '고정 상한 관측')
+        bp_rows.append((r['name'], qualification, r.get('calibration_label'), num(r['C0_Bps']*8/1e6), f"{m['requested']}/{m['publish_succeeded']}/{m['unique_received']}", m['publish_failed'], num(m['publish_duration_ms']['p50']), num(rate), r['telemetry']['12']['fq_drop_max']))
     if bp_rows:
-        body += '</section><section><h2>149번 · 새 교정값의 W1 역압</h2>'+table(['run', '교정 입력', 'C0 Mb/s', '예정/발행 성공/수신', 'publish p50 ms', 'HTB class Mb/s', 'fq drop'], bp_rows)+'<p>1 MiB/KEEP_ALL/30초, 요청0.8C0와 HTB0.5C0, flow_limit100/설계 값을 비교한다. 별도1 MiB 소켓 교정값을 입력으로 사용한다. 동일 run의 소켓 메모리·publish·UDP 오류·qdisc 로그를 보존한다. 대기만 관측된다고 전체 인과 경로나 모든 조건의 완전 전달을 입증한 것은 아니다.</p>'
+        body += '</section><section><h2>149번 · 새 교정값의 W1 역압</h2>'+table(['run', '판정 범위', '교정 입력', 'C0 Mb/s', '예정/발행 성공/수신', '발행 실패', 'publish p50 ms', 'HTB class Mb/s', 'fq drop'], bp_rows)+'<p>1 MiB/KEEP_ALL/30초, 요청0.8C0와 HTB0.5C0, flow_limit100/설계 값을 비교한다. 별도1 MiB 소켓 교정값을 입력으로 사용한다. 동일 run의 소켓 메모리·publish·UDP 오류·qdisc 로그를 보존한다. 대기만 관측된다고 전체 인과 경로나 모든 조건의 완전 전달을 입증한 것은 아니다. 수정 후 두 fq 한도 모두drop0이므로 큰 한도의 성능 우월성을 입증하지 않는다.</p>'
+    packets = read(BASE/'repair_packet_evidence.json', {})
+    if packets:
+        body += '<h3>재전송 단편화·분류기 우회 수정</h3>'+table(['캡처', 'user IP 단편화 첫 패킷', '전체 IP 단편화 패킷', 'fragment 크기 B'], [(name, r['user_IP_fragment_first_packets'], r['IPv4_fragment_packets'], ','.join(r['user_fragment_sizes'])) for name,r in packets.items()])+'<p>1404 B의 초기 데이터는68 B 헤더에서 MTU를 지켰지만, 재전송에 INFO_DST가 붙어72 B 헤더가 되면 UDP payload1476 B로 MTU를 넘었다. 소스 q_xmsg.c는 INFO_DST를 추가하며 비어 있는 pack의 첫 oversized submessage를 그대로 보낼 수 있다. 보수적으로 RTPS20+INFO_TS12+INFO_DST16+DATA_FRAG36=84 B를 예약하여 fragment1388 B로 수정했다. 수정 후 두 run의 첫15초 캡처에서 IP 단편화0, tcpdump kernel drop0, 전체 run의 bypass class 약0.003 Mb/s를 확인했다. 초기1404 B/fq100 결과는 송신 상한 검증의 근거로 사용하지 않는다. packet_evidence와 실제 소켓/라이브러리 metadata를 보존했다.</p>'
     body += '</section><section><h2>복원·남은 항목</h2><p>12/10 설정 복원: <strong>'+('확인' if restored else '세션 진행 중 또는 최종 확인 대기')+'</strong>.</p><p>active/busy/tx 통계, AP 중계 보정, 자기 부하 검증, 검증된 시간 동기, B2/C2의 모델 예측 오차 판정은 여전히 미달성이다. 새로운 채널 조건은 무선 시간 계수기 결측을 해결하지 않는다. 적응형 제어를 완료했다고 표시하지 않는다.</p><pre>'+esc(json.dumps(stage, ensure_ascii=False, indent=2))+'</pre></section>'
+    body += '<p>자동 검사21개 통과. 기존36번의 비교군8개 시운전은 별도 보고서에 보존했으며,149번의 비교군 전체를 재수행했다고 표시하지 않는다. 최종4/5는 AX1500에 있고 작업이 종료됐음을 확인했다.12/10 및 관리 PC는 SR2에 있다.</p>'
     import os
-    body += '<p><a href="'+Path(os.path.relpath(BASE, OUT.parent)).as_posix()+'">149번 원자료 폴더</a> · <a href="W1 구현 전제 검증_261012.html">기존 36번 W1 보고서</a></p>'
+    raw = Path(os.path.relpath(BASE, OUT.parent)).as_posix()
+    body += '<p><a href="'+raw+'">149번 원자료 폴더</a> · <a href="'+raw+'/final_manifest.json">코드·원자료 SHA manifest</a> · <a href="'+raw+'/repair_packet_evidence.json">재전송 캡처 집계</a> · <a href="'+raw+'/end_receipt.json">복원 영수증</a> · <a href="W1 구현 전제 검증_261012.html">기존 36번 W1 보고서</a></p>'
     style = 'body{font-family:Segoe UI,Malgun Gothic,sans-serif;color:#203248;background:#f2f5f8;line-height:1.7}main{max-width:1080px;margin:auto;padding:28px}section{background:white;border-radius:12px;padding:24px;margin:22px 0}table{border-collapse:collapse;width:100%}td,th{padding:12px;border-bottom:1px solid #dce4ed;text-align:left}th{background:#eaf0f7}.scroll{overflow:auto}pre{white-space:pre-wrap;font-size:13px;overflow-wrap:anywhere}h1{color:#163a59}a{color:#246995}'
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>W1 채널149 B2</title><style>'+style+'</style><main>'+body+'</main></html>', encoding='utf-8')

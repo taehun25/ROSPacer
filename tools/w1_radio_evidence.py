@@ -54,7 +54,9 @@ def main():
             try:condition_cfg['airtime_overhead_s']=identify_overhead(**fit);result['c2_calibration']={'inputs':fit,'conditional_O_s':condition_cfg['airtime_overhead_s']}
             except ValueError as e:result['c2_calibration']={'inputs':fit,'error':str(e)}
         for f in sorted(folder.glob('*_summary.json')):
-            n=f.name[:-13];trial=json.loads(f.read_text());d=steady(folder,n)
+            n=f.name[:-13];trial=json.loads(f.read_text())
+            if 'receiver_bps' not in trial:continue
+            d=steady(folder,n)
             row={'condition':label,'trial':n,'measured_receiver_bps':trial['receiver_bps'],'delta':d,'qualified_prediction_bps':None,'qualified_error_percent':None}
             row['conditional_O_s']=condition_cfg['airtime_overhead_s']
             try:row['strict_model_candidate']=adaptive_rate(condition_cfg,d,True)

@@ -7,6 +7,7 @@ import shlex
 import statistics
 import subprocess
 import time
+import sys
 
 from deploy import ROOT,REMOTE,ssh
 from w1_b2 import Control,OTHER,SR2,pair_check
@@ -59,7 +60,7 @@ def migrate(c,ssid,label,run,ip5):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['b2','c2']);p.add_argument('--run',required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['b2','c2']);p.add_argument('--run',required=True);p.add_argument('--wireless-validation',action='store_true');a=p.parse_args()
     homes={'12':'/home/csi2','10':'/home/csi'};bg={h:home+'/'+REMOTE+'/runs/'+a.run+'/'+a.mode+'_background' for h,home in homes.items()}
     args=argparse.Namespace(run=a.run,ip4='192.168.0.4',ip5='192.168.0.5',ssid=OTHER)
     pair=Pair(args,a.mode);c=pair.c;c.ip4='192.168.50.2'
@@ -105,6 +106,10 @@ def main():
         else:
             for n in ['quiet1','quiet2','quiet3']:trials.append(pair.trial(n))
             capacity=statistics.median(r['receiver_bps'] for r in trials)
+            if a.wireless_validation:
+                subprocess.run([sys.executable,str(ROOT/'tools/w1_counter_conditions_analysis.py'),'fit-sr2','--run',a.run],check=True,cwd=ROOT)
+                subprocess.run([sys.executable,str(ROOT/'tools/w1_counter_campaign.py'),'--run',a.run+'_sr2','--stage','validation','--capacity-mbps',str(capacity/1e6),'--bind',c.bind,'--ip4',pair.ip['4'],'--ip5',pair.ip['5'],'--management4','192.168.50.2','--ssid',SR2],check=True,cwd=ROOT)
+                subprocess.run([sys.executable,str(ROOT/'tools/w1_counter_analysis.py'),'validate','--run',a.run+'_sr2'],check=True,cwd=ROOT)
             for n in ['C2_1','C2_2','C2_3']:
                 workers['server']=start('10',['timeout','-k','2','47','iperf3','-s','-1','-B','192.168.0.4','-p','55461','-J'],bg['10'],n+'_server.json')
                 workers['client']=start('12',['timeout','-k','2','45','iperf3','-c','192.168.0.4','-B','192.168.0.3','-p','55461','-u','-b',str(round(.9*capacity)),'-l','1400','-w','1048576','-t','38','-J'],bg['12'],n+'_client.json')

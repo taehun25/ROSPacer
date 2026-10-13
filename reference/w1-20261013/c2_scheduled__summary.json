@@ -1,0 +1,88 @@
+{
+  "trials": [
+    {
+      "name": "quiet",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 291.4656221506205,
+      "receiver_full_Mbps": 289.1447500260379,
+      "receiver_duration_s": 30.06492491811514,
+      "steady_window_s": 22.999904930591583,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": false,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load"
+    },
+    {
+      "name": "C2scheduled_1",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 223.13575677503704,
+      "receiver_full_Mbps": 232.4088602891912,
+      "receiver_duration_s": 30.08410605043173,
+      "steady_window_s": 22.999939024448395,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": true,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load",
+      "background_restored_12": true,
+      "background_restored_10": true
+    },
+    {
+      "name": "C2scheduled_2",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 247.3811376457812,
+      "receiver_full_Mbps": 250.8265104490267,
+      "receiver_duration_s": 30.09284459799528,
+      "steady_window_s": 23.000369608402252,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": true,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load",
+      "background_restored_12": true,
+      "background_restored_10": true
+    },
+    {
+      "name": "C2scheduled_3",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 270.1776833393787,
+      "receiver_full_Mbps": 278.95045792902533,
+      "receiver_duration_s": 30.085933044552803,
+      "steady_window_s": 22.99990999698639,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": true,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load",
+      "background_restored_12": true,
+      "background_restored_10": true
+    }
+  ],
+  "sources_sha256": {
+    "w1_scheduled_radio.py": "2087672bdeec9481e98dda1db2b711235920c246ada1c0c790271e21db5dc05a",
+    "w1_counter_worker.py": "2818683928e9bca3d659f4f3664d45e1f9298474b425ac25ef9055848fb6c147",
+    "w1_background_udp.py": "4e8cfe2c89a039740cb48e09e652e1d30760f93a31ba2181991eeb0bddc38c29"
+  },
+  "main_ip": {
+    "5": "192.168.0.6",
+    "4": "192.168.0.5"
+  },
+  "normal_adaptive_qualified": false
+}

@@ -1,0 +1,166 @@
+{
+  "4": {
+    "power": {
+      "errors": [],
+      "qdisc_after": [
+        {
+          "kind": "noqueue",
+          "handle": "0:",
+          "root": true,
+          "refcnt": 2,
+          "options": {}
+        }
+      ],
+      "sysctl_after": {
+        "net.core.rmem_max": 212992,
+        "net.core.wmem_max": 212992
+      },
+      "power_save_after": "Power save: on\n",
+      "governors_after": {
+        "/sys/devices/system/cpu/cpu11/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu9/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu10/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu8/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor": "powersave"
+      },
+      "restored": true
+    },
+    "wire": {
+      "removed_owned_address": "192.168.50.2/24",
+      "after": [
+        {
+          "ifindex": 2,
+          "ifname": "enp1s0",
+          "flags": [
+            "BROADCAST",
+            "MULTICAST",
+            "UP",
+            "LOWER_UP"
+          ],
+          "mtu": 1500,
+          "qdisc": "fq_codel",
+          "operstate": "UP",
+          "group": "default",
+          "txqlen": 1000,
+          "link_type": "ether",
+          "address": "c4:c6:e6:e3:90:a5",
+          "broadcast": "ff:ff:ff:ff:ff:ff",
+          "addr_info": []
+        }
+      ],
+      "restored": true
+    },
+    "remaining_jobs": [],
+    "verification": {
+      "power": "Power save: on\n",
+      "qdisc": "[{\"kind\":\"noqueue\",\"handle\":\"0:\",\"root\":true,\"refcnt\":2,\"options\":{},\"bytes\":0,\"packets\":0,\"drops\":0,\"overlimits\":0,\"requeues\":0,\"backlog\":0,\"qlen\":0}]\n",
+      "wire": "[{\"ifindex\":2,\"ifname\":\"enp1s0\",\"flags\":[\"BROADCAST\",\"MULTICAST\",\"UP\",\"LOWER_UP\"],\"mtu\":1500,\"qdisc\":\"fq_codel\",\"operstate\":\"UP\",\"group\":\"default\",\"txqlen\":1000,\"link_type\":\"ether\",\"address\":\"c4:c6:e6:e3:90:a5\",\"broadcast\":\"ff:ff:ff:ff:ff:ff\",\"addr_info\":[]}]\n",
+      "link": "Connected to b0:38:6c:7d:f5:74 (on wlp2s0)\n\tSSID: iptime5GAX1500\n\tfreq: 5745\n\tRX: 3817358 bytes (24862 packets)\n\tTX: 2879592781 bytes (10778978 packets)\n\tsignal: -44 dBm\n\trx bitrate: 1080.6 MBit/s 80MHz HE-MCS 10 HE-NSS 2 HE-GI 0 HE-DCM 0\n\ttx bitrate: 960.7 MBit/s 80MHz HE-MCS 9 HE-NSS 2 HE-GI 0 HE-DCM 0\n\n\tbss flags:\tshort-slot-time\n\tdtim period:\t1\n\tbeacon int:\t100\n",
+      "interfaces": "phy#0\n\tInterface wlp2s0\n\t\tifindex 8\n\t\twdev 0x1\n\t\taddr 3c:0a:f3:02:d9:3b\n\t\tssid iptime5GAX1500\n\t\ttype managed\n\t\tchannel 149 (5745 MHz), width: 80 MHz, center1: 5775 MHz\n\t\ttxpower 3.00 dBm\n\t\tmulticast TXQ:\n\t\t\tqsz-byt\tqsz-pkt\tflows\tdrops\tmarks\toverlmt\thashcol\ttx-bytes\ttx-packets\n\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t\t0\n",
+      "sysctl": "net.core.rmem_max = 212992\nnet.core.wmem_max = 212992\n",
+      "governors": {
+        "/sys/devices/system/cpu/cpu11/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu9/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu10/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu8/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor": "powersave"
+      }
+    }
+  },
+  "5": {
+    "power": {
+      "errors": [],
+      "qdisc_after": [
+        {
+          "kind": "noqueue",
+          "handle": "0:",
+          "root": true,
+          "refcnt": 2,
+          "options": {}
+        }
+      ],
+      "sysctl_after": {
+        "net.core.rmem_max": 212992,
+        "net.core.wmem_max": 212992
+      },
+      "power_save_after": "Power save: on\n",
+      "governors_after": {
+        "/sys/devices/system/cpu/cpu11/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu9/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu10/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu8/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor": "powersave"
+      },
+      "restored": true
+    },
+    "wire": {
+      "removed_owned_address": "192.168.50.1/24",
+      "after": [
+        {
+          "ifindex": 2,
+          "ifname": "enp1s0",
+          "flags": [
+            "BROADCAST",
+            "MULTICAST",
+            "UP",
+            "LOWER_UP"
+          ],
+          "mtu": 1500,
+          "qdisc": "fq_codel",
+          "operstate": "UP",
+          "group": "default",
+          "txqlen": 1000,
+          "link_type": "ether",
+          "address": "c4:c6:e6:e3:8c:96",
+          "broadcast": "ff:ff:ff:ff:ff:ff",
+          "addr_info": []
+        }
+      ],
+      "restored": true
+    },
+    "remaining_jobs": [],
+    "verification": {
+      "power": "Power save: on\n",
+      "qdisc": "[{\"kind\":\"noqueue\",\"handle\":\"0:\",\"root\":true,\"refcnt\":2,\"options\":{},\"bytes\":0,\"packets\":0,\"drops\":0,\"overlimits\":0,\"requeues\":0,\"backlog\":0,\"qlen\":0}]\n",
+      "wire": "[{\"ifindex\":2,\"ifname\":\"enp1s0\",\"flags\":[\"BROADCAST\",\"MULTICAST\",\"UP\",\"LOWER_UP\"],\"mtu\":1500,\"qdisc\":\"fq_codel\",\"operstate\":\"UP\",\"group\":\"default\",\"txqlen\":1000,\"link_type\":\"ether\",\"address\":\"c4:c6:e6:e3:8c:96\",\"broadcast\":\"ff:ff:ff:ff:ff:ff\",\"addr_info\":[]}]\n",
+      "link": "Connected to b0:38:6c:7d:f5:74 (on wlp2s0)\n\tSSID: iptime5GAX1500\n\tfreq: 5745\n\tRX: 1218887245 bytes (9693276 packets)\n\tTX: 93104525 bytes (85493 packets)\n\tsignal: -34 dBm\n\trx bitrate: 1200.9 MBit/s 80MHz HE-MCS 11 HE-NSS 2 HE-GI 0 HE-DCM 0\n\ttx bitrate: 1200.9 MBit/s 80MHz HE-MCS 11 HE-NSS 2 HE-GI 0 HE-DCM 0\n\n\tbss flags:\tshort-slot-time\n\tdtim period:\t1\n\tbeacon int:\t100\n",
+      "interfaces": "phy#0\n\tInterface wlp2s0\n\t\tifindex 4\n\t\twdev 0x1\n\t\taddr 3c:0a:f3:02:e4:c7\n\t\tssid iptime5GAX1500\n\t\ttype managed\n\t\tchannel 149 (5745 MHz), width: 80 MHz, center1: 5775 MHz\n\t\ttxpower 3.00 dBm\n\t\tmulticast TXQ:\n\t\t\tqsz-byt\tqsz-pkt\tflows\tdrops\tmarks\toverlmt\thashcol\ttx-bytes\ttx-packets\n\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t\t0\n",
+      "sysctl": "net.core.rmem_max = 212992\nnet.core.wmem_max = 212992\n",
+      "governors": {
+        "/sys/devices/system/cpu/cpu11/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu9/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu10/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu8/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor": "powersave",
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor": "powersave"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "raw_run": "runs\\w1_20261013_radio_input_retry",
+  "sha256": {
+    "dds_confirmation/aggregation_analysis.json": "718ba9239beeffbd7c672b1a6909da228f9dd34cee9f65bda557780df34b6775",
+    "dds_confirmation/summary.json": "d9b8aca8e6ee46c7737fa4580ca8407959187e226d4149c2dd09856b992b6979",
+    "b2_aggregation_confirmation/aggregation_analysis.json": "a3d6fd13ccbafbaf95ba2d3ff8cf76461b806ab306dfc3bdf629c2b5a64e6804",
+    "b2_aggregation_confirmation/summary.json": "8082c3118c1dd6c287f106f0dc039b70dacf7e3202d47034e087ccbae5713410",
+    "c2_scheduled/aggregation_analysis.json": "8cb19f0e3718135e2eed3d35fef28502ab8a7964534fb15b7157f13df407d2d1",
+    "c2_scheduled/summary.json": "56cddbdb6c7ebb95d5d8b7569a6db71643836c828727ea9c220e7757bd9bcb44",
+    "c2_scheduled/aggregation_byte_calibration.json": "65eeaf15c8560688fc0386d7c4eed653a2bc425fdae3bb0027114e8ea6017a28",
+    "native_adaptive_smoke/summary.json": "d5797da8d18a419587c779702847505ab39500e3a6a018c637a041d062b1ae2d",
+    "final_restoration.json": "1523351663b4a819caa6fbc0904849e4931f89bd732bc46ca5ae5a71a1cea6dd"
+  },
+  "scope": "Operational MT7921 calibration; original TX-inclusive busy assumption rejected. Not intrinsic PHY airtime or universal adaptive approval."
+}

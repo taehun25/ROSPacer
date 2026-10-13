@@ -1,0 +1,30 @@
+{
+  "BA_busy_s": 3.175447607866674e-05,
+  "RX_data_scale": 1.051211052219474,
+  "RX_AMPDU_busy_s": 0.00014615046067734683,
+  "idle_busy_fraction": 0.005833333333323824,
+  "AMPDU_byte_coverage_scale": 1.05,
+  "O_up_s": 3.4593976690266982e-06,
+  "O_down_s": 1.2842142404464384e-06,
+  "station_link_header_bytes": 14,
+  "kernel_release": "6.8.0-138-generic",
+  "module_srcversions": {
+    "mt76": "49D531B29B17F1D8D786A96",
+    "mt792x_lib": "656482E921B4B5EE0116704",
+    "mt7921e": "0082ED411D613831302506E"
+  },
+  "validated": true,
+  "alpha": 0.9,
+  "cap_ceiling_skb_Bps": 37556199.27225928,
+  "payload_bytes": 1048576,
+  "AP": "b0:38:6c:7d:f5:74",
+  "frequency_MHz": 5745,
+  "width_MHz": 80,
+  "reader_sha256": "e64cf5ca976e8d9812978fa6b779443522d7a95416037feb10050cce809baa49",
+  "validation_sha256": {
+    "dds_confirmation\\aggregation_analysis.json": "718ba9239beeffbd7c672b1a6909da228f9dd34cee9f65bda557780df34b6775",
+    "b2_aggregation_confirmation\\aggregation_analysis.json": "a3d6fd13ccbafbaf95ba2d3ff8cf76461b806ab306dfc3bdf629c2b5a64e6804",
+    "c2_scheduled\\aggregation_analysis.json": "8cb19f0e3718135e2eed3d35fef28502ab8a7964534fb15b7157f13df407d2d1"
+  },
+  "scope": "MT7921 AX149/80 1MiB operational calibration; no intrinsic PHY airtime claim"
+}

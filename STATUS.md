@@ -374,3 +374,36 @@ NetworkManager/chrony 설정 파일은 수정하지 않았다.10번 w1mon 삭제
 W1 전체를 통과로 표시하지 않는다. 후속은 장비별 busy/TX 입력 계약과 aggregation을
 반영한 중계 비용 교정, 별도 데이터로 자기부하/B2/C2 재검증이다. 정확한 airtime
 합의 독립 검증에는 완전한 HE/PPDU 메타데이터 관측 경로가 필요하다.
+
+
+### 2026-10-13 무선 입력 재검증 및 native 교정 adaptive
+
+현재 4→5 MT7921/138커널/149번80MHz에서 polling0/50/200/1000/2000ms,
+idle/AP-only/relay 반복 및5→4 방향을 확인했다. busy<TX는 읽는 주기와 무관하게
+부하에서 반복됐다. raw busy를 TX-inclusive 총 airtime으로 사용하지 않는다.
+수신 PHY와 native RX byte/MPDU/AMPDU/AMPDU byte, 송신측 RX BA로 운용 보정을
+교정했다. native RX duration의 미갱신0은 제외하고 음수β는 보존했다.
+연속부하만으로 만든 후보는 burst에서 실패했고 실패 자료도 보존한다.
+
+고정 교정 후 새 DDS 자기 부하6조건 rawβ=-0.243%..3.141%, |β|<=5% 통과.
+Fast0.8 요청478개 중418개 발행·418개 수신으로 요청 부하 달성과 구분한다.
+새 B2 3회 오차8.698%..10.795%, 별도 C2 3회2.239%..5.415%, 모두<=20%였다.
+C2는 계수학습에 사용하지 않은 자료지만 계수 고정 전에 수집했다.
+SR2 byte 정규화는 quiet만 사용했다. 현재 AX 프로파일을 SR2에서 그대로 승인하지 않는다.
+
+정상 govern adaptive의 새 native 교정 분기를 실제 실행했다. 유선 receiver feedback
+200ms, 약3초 창,0.9C0 ceiling, 잘못된 신원/범위/결측을 거부한다.
+Fast/Cyclone 각120/120수신, 갱신106/121회, 중앙값200.27/200.51ms;
+feedback을 먼저 종료해 각51회 stale hold와 qdisc 복원을 확인했다.
+기존 diagnostic 기록을 정식 승인으로 바꾸지 않았고 미교정 입력 gate도 유지한다.
+자동검사38개 통과. 4/5 power/wire 최종복원true, 남은 실험프로세스 없음;
+절전on, CPU powersave, rmem/wmem212992, noqueue, AX1500, 임시주소 삭제를 확인했다.
+12/10 경쟁 프로세스 종료 및 rmem/wmem212992 복원도 확인했다.
+
+독립 BA32µs 참조와 effective BA31.754µs는 약0.77% 차이다. HE duration/LTF가
+부족해 전체 PPDU airtime과 intrinsic O는 독립 식별하지 못했다. 수정 운용 모델의
+현재 장비 검증은 통과하지만 원식의 W1 전체 승인·다른 장비 일반화·adaptive 성능
+우위/동적 추종/drain 완료라고 표시하지 않는다. 새 지연도 시계 미승인으로 분석 제외.
+원자료: runs/w1_20261013_radio_input_retry. 버전 관리된 근거: reference/w1-20261013.
+보고서: html 파일 모음/결과/W1 실험결과/W1 무선 입력 추가 검증_261013.html 및
+html 파일 모음/W1 보고서.html. source SHA와 source commit은 구분해 저장한다.

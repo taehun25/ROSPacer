@@ -26,6 +26,37 @@ def write_section(source,identifier,body):
     return source
 
 
+def model_equations():
+    """Native MathML: fraction/subscript/accent layout without a CDN or JS."""
+    def row(*parts):return '<mrow>'+''.join(parts)+'</mrow>'
+    def ident(value):return '<mi>'+E(value)+'</mi>'
+    def number(value):return '<mn>'+str(value)+'</mn>'
+    def op(value):return '<mo>'+E(value)+'</mo>'
+    def sub(base,label):return '<msub>'+base+'<mtext>'+E(label)+'</mtext></msub>'
+    def hat(base):return '<mover accent="true">'+base+'<mo>^</mo></mover>'
+    def frac(top,bottom):return '<mfrac>'+row(top)+row(bottom)+'</mfrac>'
+    def par(*parts):return row(op('('),*parts,op(')'))
+    def minimum(*parts):return row('<mi mathvariant="normal">min</mi>',op('('),*parts,op(')'))
+    def math(body,label):return '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="'+E(label)+'">'+row(body)+'</math>'
+    def line(label,body):return '<div class="eq-row"><div class="eq-label">'+label+'</div><div class="eq-scroll">'+math(body,label)+'</div></div>'
+    d=ident('Δ');dr=sub(d,'rx');q=ident('q');rb=sub(ident('B'),'RX');rp=sub(ident('P'),'RX');mp=sub(ident('N'),'MPDU');ap=sub(ident('N'),'AMPDU');ab=sub(ident('B'),'AMPDU');ba=sub(ident('N'),'BA')
+    ppdu=sub(hat(ident('N')),'PPDU');visible=sub(hat(ident('T')),'self-visible');beta=sub(hat(ident('β')),'other, raw');theta=hat(ident('θ'));down=sub(ident('R'),'dn');up=sub(ident('R'),'up');ip=sub(ident('L'),'IP');frame=sub('<mover accent="true"><mi>L</mi><mo>¯</mo></mover>','frame')
+    at=sub(ident('A'),'tx');aligned='<msubsup><mi>X</mi><mtext>rx</mtext><mtext>aligned</mtext></msubsup>'
+    formula='<style>a{overflow-wrap:anywhere}.equations{padding:12px 20px;background:#edf2f8;border:1px solid #d8e2ef;border-radius:8px;margin:18px 0}.eq-row{display:grid;grid-template-columns:155px minmax(0,1fr);gap:18px;align-items:center;padding:17px 0;border-bottom:1px solid #d6e0ec}.eq-row:last-of-type{border-bottom:0}.eq-label{font-size:14px;font-weight:600;color:#405977}.eq-scroll{overflow-x:auto;padding:8px 3px}.eq-scroll math{font-family:"Cambria Math","STIX Two Math",serif;font-size:21px;margin:0;width:max-content;min-width:0}.equation-notes{font-size:14px;border-top:1px solid #d6e0ec;padding-top:12px}.equation-notes p{margin:8px 0}@media(max-width:700px){.eq-row{grid-template-columns:minmax(0,1fr);gap:5px}.equations{padding:10px 14px}.eq-scroll math{font-size:19px}}@media print{.equations{break-inside:auto}.eq-row{break-inside:avoid}.eq-scroll{overflow:visible}.eq-scroll math{font-size:15px}}</style><div class="equations" id="model-equations">'
+    formula+=line('관측 구간',row(d,op('='),at,par(sub(ident('t'),'1')),op('−'),at,par(sub(ident('t'),'0'))))
+    formula+=line('수신 통계 구간 정렬',row(aligned,op('='),d,sub(ident('X'),'rx'),op('×'),frac(d,dr)))
+    formula+=line('AMPDU 바이트 coverage',row(q,op('='),minimum(number(1),op(','),frac(ab,row(ident('k'),op('×'),rb)))))
+    formula+=line('PPDU 수 추정',row(ppdu,op('='),ap,op('+'),mp,op('×'),par(number(1),op('−'),q)))
+    formula+=line('자기 부하의 관측 busy',row(visible,op('='),sub(ident('h'),'BA'),ba,op('+'),ident('γ'),frac(row(rb,op('−'),number(14),rp,op('+'),number(50),mp),down),op('+'),sub(ident('h'),'PPDU'),ppdu))
+    formula+=line('다른 트래픽 점유율',row(beta,op('='),frac(row(sub(ident('T'),'busy'),op('−'),sub(ident('f'),'idle'),d,op('−'),visible),d)))
+    numerator=row(par(number(1),op('+'),ident('ν')),par(sub(ident('O'),'up'),op('+'),frac(ip,up)),op('+'),sub(ident('O'),'dn'),op('+'),frac(ip,down))
+    formula+=line('단위 바이트당 운용 비용',row(theta,op('='),frac(numerator,frame)))
+    formula+=line('평활 전 송신 상한',row(sub(ident('c'),'target'),op('='),minimum(number('0.9'),sub(ident('C'),'0'),op(','),frac(row(number('0.9'),par(number(1),op('−'),beta)),theta))))
+    formula+='<div class="equation-notes"><p>β의 음수값은 그대로 기록하며, 자기 TX를 다시 빼지 않는다.</p><p>200ms마다 입력을 수집·갱신하고 약3초 관측 창을 사용한다. 위 상한에 EMA 0.7/0.3을 적용한다.</p></div></div>'
+    symbols=[['Δ / Δrx','송신/수신 active 계수의 구간 증분(s). X는 수신 바이트 또는 개수 통계이며 ΔXrx는 원시 구간 증분이다.'],['BRX / PRX','구간을 정렬한 수신 rx_bytes / rx_packets.'],['NMPDU / NAMPDU / BAMPDU','구간을 정렬한 수신 rx_mpdu_cnt / rx_ampdu_cnt / rx_ampdu_bytes_cnt.'],['NBA','송신 단말이 수신한 BlockAck의 rx_ba_cnt 구간 증분.'],['q / N̂PPDU','coverage 비율 / standalone MPDU 보정을 포함한 추정 PPDU 수.'],['Rup / Rdn','송신 단말의 TX PHY / 수신 단말의 RX PHY 속도(B/s).'],['ν','송신 retries 증분 / packets 증분.'],['LIP / L̄frame','평균 IP 패킷 바이트 / 평균 station frame 바이트. LIP=L̄frame−14.'],['fidle / Tbusy','무부하 busy 비율 / 송신 단말의 raw busy 구간 증분(s).'],['ctarget / C₀','평활 전 송신 상한 / 교정 처리량(B/s).']]
+    return formula+note('수식 기호와 코드 통계 이름',table(['기호','의미'],symbols))
+
+
 def main():
     out=DEST/'결과/W1 실험결과';out.mkdir(parents=True,exist_ok=True)
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
@@ -60,20 +91,7 @@ def main():
     s+='<p>원자료: '+raw('polling/summary.json')+' · '+raw('semantics/summary.json')+' · '+raw('source_reference/mt792x_mac.c','실제 커널 계열 소스 발췌')+'</p>'
     s+='<h2>3. 왜 aggregation을 반영해야 하나</h2><p>동일한 평균 UDP 부하라도 1ms 연속 송신과 100ms 묶음 송신의 busy 기여가 달랐다. 연속 부하용 보정만 적용한 별도 burst 시험에서는 자기 부하 잔차가 −8.87~−14.75%로 실패했다. 이 실패를 감추거나 β를 0으로 잘라 통과시키지 않았다.</p><p>수신 단말의 <code>rx_ampdu_cnt</code>만 쓰면 묶이지 않은 MPDU가 빠진다. 저부하 연속 전송에서 AMPDU byte/전체 RX byte 비율이 약 0.41까지 내려갔다. 따라서 전체 RX byte·MPDU·AMPDU·AMPDU byte를 함께 사용했다. <code>rx duration</code>은 실제 부하에서도 증분 0인 사례가 있어 제어 입력에서 제외했다.</p>'
     s+=note('MSDU·MPDU·A-MSDU·A-MPDU·PPDU 용어','<p><b>MSDU</b>는 MAC에 전달되는 상위 계층 데이터 단위, <b>MPDU</b>는 전송되는 MAC 프레임이다. <b>A-MSDU</b>는 여러 MSDU를 한 MPDU에 묶고, <b>A-MPDU</b>는 여러 MPDU를 한 PHY 전송 묶음에 넣는다. <b>PPDU</b>는 프리앰블과 데이터 등을 포함한 PHY 전송 단위다. ROS 1MiB 메시지 하나는 많은 RTPS/UDP 패킷으로 나뉘므로 ROS 메시지 수, IP 패킷 수, MPDU 수, PPDU 수는 같지 않다.</p><p>native 통계의 RX byte는 단말이 받은 데이터, MPDU/AMPDU 계수는 하드웨어 MIB 통계다. 바이트 정의·padding·재전송 때문에 비율이 1을 조금 넘을 수 있다. 이를 실제 aggregation 비율이라고 그대로 해석하지 않고 raw 값과 AP별 운용 교정값을 함께 보존했다. 일반 <code>rx_fragments</code> 카운터를 IP 단편화 개수로 읽지 않는다.</p>')
-    s+='''<h2>4. 고정한 수정 모델과 교정·검증 분리</h2><pre>관측 구간 Δ = 송신 active 계수 증분
-비교 구간에 맞춘 수신 통계 = 수신 계수 증분 × (송신 Δ / 수신 active 증분)
-coverage = min(1, RX_AMPDU_bytes / (k × RX_bytes))
-N̂PPDU = RX_AMPDU_count + RX_MPDU_count × (1 − coverage)
-T̂self-visible = hBA × 송신측 RX_BA_count
-              + γ × (수신 RX_bytes − 14×RX_packets + 50×RX_MPDU_count) / Rdown
-              + hPPDU × N̂PPDU
-β̂other,raw = (busy − idle_fraction×Δ − T̂self-visible) / Δ
-
-θ̂ = ((1+송신 retries/packets)×(Oup+IP_bytes/Rup)
-      + Odown+IP_bytes/Rdown) / mean_station_frame_bytes
-송신 상한 = min(0.9 C₀, 0.9 × (1−β̂other,raw) / θ̂)
-※ β의 음수값은 그대로 기록. 자기 TX를 다시 빼지 않음.
-※ 200ms 입력 수집·갱신, 약 3초 관측 창, 상한 EMA 0.7/0.3.</pre>'''
+    s+='<h2>4. 고정한 수정 모델과 교정·검증 분리</h2>'+model_equations()
     s+=table(['계수','값','의미'],[
         ['hBA',f"{p['BA_busy_s']*1e6:.3f} µs/BA",'AP 응답의 effective busy 기여'],
         ['γ',f"{p['RX_data_scale']:.6f}",'수신 데이터/PHY 시간 proxy 보정'],

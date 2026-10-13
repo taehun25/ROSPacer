@@ -59,6 +59,16 @@ def model_equations():
     return italic_style+formula+note('수식 기호와 코드 통계 이름',table(['기호','의미'],symbols))
 
 
+def capacity_validation_note():
+    """The offline UDP capacity predictor differs from the SKB governor."""
+    theta='''<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mstyle mathvariant="italic"><mrow><msub><mover accent="true"><mi>θ</mi><mo>^</mo></mover><mtext>UDP</mtext></msub><mo>=</mo><mfrac><mrow><mo>(</mo><mn>1</mn><mo>+</mo><mi>ν</mi><mo>)</mo><mo>(</mo><msub><mi>O</mi><mtext>cal</mtext></msub><mo>+</mo><mfrac><mn>1428</mn><msub><mi>R</mi><mtext>up</mtext></msub></mfrac><mo>)</mo><mo>+</mo><msub><mi>O</mi><mtext>cal</mtext></msub><mo>+</mo><mfrac><mn>1428</mn><msub><mi>R</mi><mtext>dn</mtext></msub></mfrac></mrow><mn>1400</mn></mfrac></mrow></mstyle></math>'''
+    capacity='''<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mstyle mathvariant="italic"><mrow><msub><mover accent="true"><mi>C</mi><mo>^</mo></mover><mtext>UDP</mtext></msub><mo>=</mo><mfrac><mrow><mn>1</mn><mo>−</mo><msub><mover accent="true"><mi>β</mi><mo>^</mo></mover><mtext>other, raw</mtext></msub></mrow><msub><mover accent="true"><mi>θ</mi><mo>^</mo></mover><mtext>UDP</mtext></msub></mfrac></mrow></mstyle></math>'''
+    body='<p><b>이 표의 오프라인 처리량 예측은 UDP payload 단위다.</b> 4절의 식은 실제 제어기의 qdisc 바이트 단위 송신 상한식이다. 두 식을 같은 θ 또는 같은 비용 계수로 읽으면 안 된다. 자기 부하 busy 보정과 β 추정은 공유하지만, 처리량·패킷 바이트 단위와 비용 계수는 구분한다.</p>'
+    body+='<div class="eq-row"><div class="eq-label">UDP 바이트당 비용</div><div class="eq-scroll">'+theta+'</div></div><div class="eq-row"><div class="eq-label">수신 처리량 예측</div><div class="eq-scroll">'+capacity+'</div></div>'
+    body+='<p>UDP payload는1400B, IP/UDP를 포함한 크기는1428B다. Rup/Rdn은B/s이고, ν는송신 retries/packets다. Ocal은quiet 교정에서 고정한 <code>O_saturated_split_retry_s</code>: B2의AX1500은2.460741µs, C2의SR2는4.376449µs다. 경쟁 측정값을 맞추기 위해 다시 교정하지 않았다.</p><p>예측B/s에8을 곱해표의bit/s로 변환하고, 오차는 |예측−실측|/실측이다. 용량 자체를 비교하므로 여기에는여유 계수0.9를 곱하지 않는다. 실시간 제어는4절의별도상·하향운용비용과평균station frame bytes를 사용하고0.9여유·0.9C₀상한·EMA를 적용한다.</p>'
+    return note('처리량 오차표의 실제 예측식 · 제어 상한식과 단위 구분',body)
+
+
 def main():
     out=DEST/'결과/W1 실험결과';out.mkdir(parents=True,exist_ok=True)
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
@@ -115,6 +125,7 @@ def main():
     s+='<h2>6. B2·C2의 독립 예측 오차</h2>'
     for label,rows in [('B2',b2),('C2',c2)]:
         s+=table([label+' 조건','실측 Mb/s','예측 Mb/s','절대 상대 오차','20% 기준'],[[r['name'],f"{r['actual_bps']/1e6:.3f}",f"{r['prediction_bps']/1e6:.3f}",f"{r['error_fraction']*100:.3f}%",'통과' if r['error_fraction']<=.2 else '실패'] for r in rows])
+    s+=capacity_validation_note()
     s+=note('B2·C2·quiet·측정 구간의 정의','<p><b>B2</b>: 주 쌍4/5는 AX1500, 경쟁 쌍12/10은 별도 SR2 AP. 두 AP가149번/80MHz를 공유하며 경쟁 UDP를2초 켜고2초 끄는 패턴이다. <b>C2</b>: 네 단말 모두 SR2에서 경쟁 쌍이 약0.9C₀ UDP를 전송한다. 같은 AP 자원을 놓고 경쟁한다. <b>quiet</b>: 해당 토폴로지와 AP를 유지하고 경쟁 UDP만 끈 기준 상태다. 두 AP가 켜져 있어도 B2 경쟁 트래픽이 꺼질 수 있다.</p><p>주 iperf UDP1400B 포화 측정은30초다. 경쟁 source/sink와 통계 측정을 미리 예약하고 무선 부하 중 PC의 TCP 제어를 하지 않았다. 중앙 수신 interval3..27의 약23초 처리량과 대응하는 약24초 source 계수 창을 사용했다. 각 회차 client 성공·30초 지속·경쟁 실행·버퍼 복원을 검사했다. 두 구간의 길이를 같다고 가정한 총 byte 나눗셈은 하지 않는다.</p><p>초기 직접 제어 B2와 짧아진 C2, 시작 시계 오차/준비 실패 회차는 원자료로 보존하고 공식 오차 표에서는 제외했다. PC 시계가 단말보다 약124초 앞서 있어 예약 시각을 host별 오프셋으로 보정했다. 이 정렬은 장시간 radio 평균용이며 1ms 종단 지연 동기화 승인으로 쓰지 않는다. B2/C2에서 β가 양수인 것은 경쟁을 관측한 결과다. raw 파일의 <code>self_pass=false</code>는 경쟁 조건에서 자기 부하 전용 기준을 만족하지 않는다는 뜻이며, 20% 용량 예측 오차 실패와 다르다.</p>')
     s+='<p>'+raw('b2_aggregation_confirmation/summary.json')+' · '+raw('b2_aggregation_confirmation/aggregation_analysis.json')+' · '+raw('c2_scheduled/summary.json')+' · '+raw('c2_scheduled/aggregation_analysis.json')+'</p>'
     s+='<h2>7. 수정 adaptive의 실제 갱신과 결측 보류</h2>'

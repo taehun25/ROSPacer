@@ -16,7 +16,8 @@ E=html.escape
 
 def load(name):return json.loads((BASE/name).read_text(encoding='utf8'))
 def table(headers,rows):
-    return '<div class="scroll"><table><thead><tr>'+''.join('<th>'+E(str(x))+'</th>' for x in headers)+'</tr></thead><tbody>'+''.join('<tr>'+''.join('<td>'+E(str(x))+'</td>' for x in row)+'</tr>' for row in rows)+'</tbody></table></div>'
+    cls=' class="math-symbols"' if headers==['기호','의미'] else ' class="model-coefficients"' if headers==['계수','값','의미'] else ''
+    return '<div class="scroll"><table'+cls+'><thead><tr>'+''.join('<th>'+E(str(x))+'</th>' for x in headers)+'</tr></thead><tbody>'+''.join('<tr>'+''.join('<td>'+E(str(x))+'</td>' for x in row)+'</tr>' for row in rows)+'</tbody></table></div>'
 def note(title,body):return '<details><summary>'+title+'</summary><div class="note">'+body+'</div></details>'
 def raw(path,label=None):return '<a href="../../../ROSPacer/runs/'+BASE.name+'/'+path.replace('\\','/')+'">'+E(label or path)+'</a>'
 def write_section(source,identifier,body):
@@ -36,8 +37,8 @@ def model_equations():
     def hat(base):return '<mover accent="true">'+base+'<mo>^</mo></mover>'
     def frac(top,bottom):return '<mfrac>'+row(top)+row(bottom)+'</mfrac>'
     def par(*parts):return row(op('('),*parts,op(')'))
-    def minimum(*parts):return row('<mi mathvariant="normal">min</mi>',op('('),*parts,op(')'))
-    def math(body,label):return '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="'+E(label)+'">'+row(body)+'</math>'
+    def minimum(*parts):return row('<mi mathvariant="italic">min</mi>',op('('),*parts,op(')'))
+    def math(body,label):return '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="'+E(label)+'"><mstyle mathvariant="italic">'+row(body)+'</mstyle></math>'
     def line(label,body):return '<div class="eq-row"><div class="eq-label">'+label+'</div><div class="eq-scroll">'+math(body,label)+'</div></div>'
     d=ident('Δ');dr=sub(d,'rx');q=ident('q');rb=sub(ident('B'),'RX');rp=sub(ident('P'),'RX');mp=sub(ident('N'),'MPDU');ap=sub(ident('N'),'AMPDU');ab=sub(ident('B'),'AMPDU');ba=sub(ident('N'),'BA')
     ppdu=sub(hat(ident('N')),'PPDU');visible=sub(hat(ident('T')),'self-visible');beta=sub(hat(ident('β')),'other, raw');theta=hat(ident('θ'));down=sub(ident('R'),'dn');up=sub(ident('R'),'up');ip=sub(ident('L'),'IP');frame=sub('<mover accent="true"><mi>L</mi><mo>¯</mo></mover>','frame')
@@ -52,9 +53,10 @@ def model_equations():
     numerator=row(par(number(1),op('+'),ident('ν')),par(sub(ident('O'),'up'),op('+'),frac(ip,up)),op('+'),sub(ident('O'),'dn'),op('+'),frac(ip,down))
     formula+=line('단위 바이트당 운용 비용',row(theta,op('='),frac(numerator,frame)))
     formula+=line('평활 전 송신 상한',row(sub(ident('c'),'target'),op('='),minimum(number('0.9'),sub(ident('C'),'0'),op(','),frac(row(number('0.9'),par(number(1),op('−'),beta)),theta))))
-    formula+='<div class="equation-notes"><p>β의 음수값은 그대로 기록하며, 자기 TX를 다시 빼지 않는다.</p><p>200ms마다 입력을 수집·갱신하고 약3초 관측 창을 사용한다. 위 상한에 EMA 0.7/0.3을 적용한다.</p></div></div>'
+    formula+='<div class="equation-notes"><p><em>β</em>의 음수값은 그대로 기록하며, 자기 TX를 다시 빼지 않는다.</p><p>200ms마다 입력을 수집·갱신하고 약3초 관측 창을 사용한다. 위 상한에 EMA 0.7/0.3을 적용한다.</p></div></div>'
     symbols=[['Δ / Δrx','송신/수신 active 계수의 구간 증분(s). X는 수신 바이트 또는 개수 통계이며 ΔXrx는 원시 구간 증분이다.'],['BRX / PRX','구간을 정렬한 수신 rx_bytes / rx_packets.'],['NMPDU / NAMPDU / BAMPDU','구간을 정렬한 수신 rx_mpdu_cnt / rx_ampdu_cnt / rx_ampdu_bytes_cnt.'],['NBA','송신 단말이 수신한 BlockAck의 rx_ba_cnt 구간 증분.'],['q / N̂PPDU','coverage 비율 / standalone MPDU 보정을 포함한 추정 PPDU 수.'],['Rup / Rdn','송신 단말의 TX PHY / 수신 단말의 RX PHY 속도(B/s).'],['ν','송신 retries 증분 / packets 증분.'],['LIP / L̄frame','평균 IP 패킷 바이트 / 평균 station frame 바이트. LIP=L̄frame−14.'],['fidle / Tbusy','무부하 busy 비율 / 송신 단말의 raw busy 구간 증분(s).'],['ctarget / C₀','평활 전 송신 상한 / 교정 처리량(B/s).']]
-    return formula+note('수식 기호와 코드 통계 이름',table(['기호','의미'],symbols))
+    italic_style='<style id="equation-italics">.eq-scroll math,.eq-scroll math *{font-style:italic}.math-symbols td:first-child,.model-coefficients td:first-child{font-family:"Cambria Math","STIX Two Math",serif;font-style:italic}</style>'
+    return italic_style+formula+note('수식 기호와 코드 통계 이름',table(['기호','의미'],symbols))
 
 
 def main():

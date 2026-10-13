@@ -24,7 +24,7 @@
   "validation_sha256": {
     "dds_confirmation\\aggregation_analysis.json": "718ba9239beeffbd7c672b1a6909da228f9dd34cee9f65bda557780df34b6775",
     "b2_aggregation_confirmation\\aggregation_analysis.json": "a3d6fd13ccbafbaf95ba2d3ff8cf76461b806ab306dfc3bdf629c2b5a64e6804",
-    "c2_scheduled\\aggregation_analysis.json": "8cb19f0e3718135e2eed3d35fef28502ab8a7964534fb15b7157f13df407d2d1"
+    "c2_aggregation_confirmation\\aggregation_analysis.json": "2a5ea86a4dee16e0d143a03ae5ca7ef6625dd237daf4b45255045aba1594e3d2"
   },
   "scope": "MT7921 AX149/80 1MiB operational calibration; no intrinsic PHY airtime claim"
 }

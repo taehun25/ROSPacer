@@ -407,3 +407,21 @@ feedback을 먼저 종료해 각51회 stale hold와 qdisc 복원을 확인했다
 원자료: runs/w1_20261013_radio_input_retry. 버전 관리된 근거: reference/w1-20261013.
 보고서: html 파일 모음/결과/W1 실험결과/W1 무선 입력 추가 검증_261013.html 및
 html 파일 모음/W1 보고서.html. source SHA와 source commit은 구분해 저장한다.
+
+
+#### 최종 시간 순서 보강: 고정 후 C2 새3회
+
+최종 점검에서 기존 C2의 수집 순서가 계수 고정 전임을 확인하여, 계수와 SR2 quiet
+정규화를 유지한 채 c2_aggregation_confirmation 새3회를 추가했다. 실측
+205.693/209.491/205.775Mb/s, 고정 모델 오차0.108/2.953/0.212%, 모두<=20%다.
+기존 C2는 보조 자료로 보존하며 최종 판단에 새3회를 사용한다.
+교정에 쓰지 않은 DDS 자기부하·B2·C2의 최종 자료 모두 계수 고정 후 수집됐다.
+
+AP/채널 범위 확인을 qdisc 설치 전에도 수행하도록 보강했다. 실제 장비에서
+미승인 profile과 잘못된 AP 모두 거부·qdisc 불변을 확인했다. 자동 검사39개 통과.
+보강된 최종 native_adaptive_final에서 Fast/Cyclone 각120/120 수신,
+갱신154/106회, 중앙값200.50/200.51ms, feedback 중단 후각51회 hold, qdisc 복원.
+phase4 power/wire도 종료하고4/5복원true·남은 실험프로세스없음을 다시 확인했다.
+현재 장비의 수정 운용 모델만 범위 내 승인하며 전체 HE/PPDU airtime·intrinsic O의
+독립 식별과 보편 adaptive 성능 판정은 계속 구분한다. 원자료와 버전 관리된 근거는
+동일한 경로에 보존한다. 최신 보고서의 C2와 제어기 표는 이 최종 결과를 따른다.

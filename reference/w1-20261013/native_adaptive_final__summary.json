@@ -1,0 +1,45 @@
+{
+  "trials": [
+    {
+      "rmw": "fastdds",
+      "planned": 120,
+      "succeeded": 120,
+      "received": 120,
+      "runtime_valid": {
+        "4": true,
+        "5": true
+      },
+      "updated": 154,
+      "stale_feedback_holds": 51,
+      "median_update_interval_s": 0.2005039279902121,
+      "maximum_cap_Mbps": 300.4495941780742,
+      "cap_ceiling_Mbps": 300.4495941780742,
+      "qdisc_restored": true,
+      "latency_qualified": false,
+      "scope": "clean radio functional check; wired feedback stop exercises hold; no adaptive superiority claim"
+    },
+    {
+      "rmw": "cyclonedds",
+      "planned": 120,
+      "succeeded": 120,
+      "received": 120,
+      "runtime_valid": {
+        "4": true,
+        "5": true
+      },
+      "updated": 106,
+      "stale_feedback_holds": 51,
+      "median_update_interval_s": 0.20050790900131688,
+      "maximum_cap_Mbps": 300.4495941780742,
+      "cap_ceiling_Mbps": 300.4495941780742,
+      "qdisc_restored": true,
+      "latency_qualified": false,
+      "scope": "clean radio functional check; wired feedback stop exercises hold; no adaptive superiority claim"
+    }
+  ],
+  "source_sha256": {
+    "tools/w1_native_smoke.py": "fdb5ee9c605a34848e4ce7d4d2b29f03b439250dd896791574c45bde546e2371",
+    "rospacer/native_radio.py": "2beb48bf25c8781998107cbd11f278b7f0ca870bb80d249adadfdb272bb4360e",
+    "rospacer/linux.py": "e8f01461aae6e73f656912d40e9894cb0dd833f9bf6a81ed3676dade622fb60c"
+  }
+}

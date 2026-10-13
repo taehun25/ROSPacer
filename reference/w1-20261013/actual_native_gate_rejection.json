@@ -1,0 +1,10 @@
+{
+  "unvalidated": {
+    "rejection": "native radio calibration has not passed its validation gate",
+    "qdisc_unchanged": true
+  },
+  "wrong_AP": {
+    "rejection": "AP outside calibrated scope",
+    "qdisc_unchanged": true
+  }
+}

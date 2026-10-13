@@ -51,7 +51,7 @@ def predict(profile,f):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['fit','dds','burst','c2','b2']);p.add_argument('--run',required=True);p.add_argument('--dds-label',default='dds_radio_v2');a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['fit','dds','burst','c2','b2']);p.add_argument('--run',required=True);p.add_argument('--dds-label',default='dds_radio_v2');p.add_argument('--condition-label');p.add_argument('--coverage-profile');a=p.parse_args()
     base=ROOT/'runs'/a.run;file=base/'frozen_aggregation_coverage_profile.json'
     if a.mode=='fit':
         if file.exists():raise ValueError('preserve frozen profile')
@@ -83,9 +83,13 @@ def main():
                 if not dir.is_dir() or not (dir/'summary.json').exists():continue
                 pub=read(dir/'4/pub.json');f=features(read(dir/'4/radio.json'),read(dir/'5/radio.json'),pub['measurement_started_ns']/1e9+2,pub['measurement_ended_ns']/1e9-2);rows.append({'name':dir.name,'features':f,**predict(profile,f)})
         else:
-            folder=base/('burst_validation' if a.mode=='burst' else 'b2_aggregation_confirmation' if a.mode=='b2' else 'c2_scheduled')
+            folder=base/(a.condition_label or ('burst_validation' if a.mode=='burst' else 'b2_aggregation_confirmation' if a.mode=='b2' else 'c2_scheduled'))
             coverage_scale=1.05
-            if a.mode=='c2':
+            if a.mode=='c2' and a.coverage_profile:
+                calibration=read(base/a.coverage_profile);coverage_scale=calibration['coverage_scale']
+                if calibration['source']!='quiet only; competitor data not used':raise ValueError('unqualified byte coverage source')
+                (folder/'aggregation_byte_calibration.json').write_text(json.dumps({**calibration,'frozen_parent':a.coverage_profile,'parent_sha256':hashlib.sha256((base/a.coverage_profile).read_bytes()).hexdigest()},indent=2))
+            elif a.mode=='c2':
                 q=read(folder/'5_quiet.json')['rows'];first,last=q[0]['etstats'],q[-1]['etstats']
                 ratio=((last['rx_ampdu_bytes_cnt']-first['rx_ampdu_bytes_cnt'])%(2**32))/(last['rx_bytes']-first['rx_bytes'])
                 coverage_scale=ratio*1.05

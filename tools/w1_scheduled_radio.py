@@ -27,7 +27,7 @@ def main():
         c.connect(OTHER)
         for h in pair.home:write(h,pair.home[h]+'/'+REMOTE+'/tools/w1_counter_worker.py',(ROOT/'tools/w1_counter_worker.py').read_bytes())
         if a.mode=='c2':
-            ips=migrate(c,SR2,'to_sr2_scheduled',a.run,'192.168.0.6');moved=True;pair.ip=ips;pair.ssid=SR2
+            ips=migrate(c,SR2,'to_sr2_'+pair.out.name,a.run,'192.168.0.6');moved=True;pair.ip=ips;pair.ssid=SR2
         for i in range(1 if a.skip_quiet else 0,4):
             name='quiet' if i==0 else a.mode.upper()+'scheduled_'+str(i);competing=i>0
             if a.mode=='b2':c.connect(OTHER)
@@ -75,7 +75,7 @@ def main():
             try:remote(h,'from pathlib import Path;Path('+repr(folder+'/stop')+').write_text("stop");print("{}")')
             except Exception:pass
         if moved:
-            c.ip5=pair.ip['5'];migrate(c,OTHER,'back_to_ax_scheduled',a.run,'192.168.0.5')
+            c.ip5=pair.ip['5'];migrate(c,OTHER,'back_to_ax_'+pair.out.name,a.run,'192.168.0.5')
         c.connect(OTHER)
 
 

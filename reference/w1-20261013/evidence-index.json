@@ -9,7 +9,16 @@
     "c2_scheduled/summary.json": "56cddbdb6c7ebb95d5d8b7569a6db71643836c828727ea9c220e7757bd9bcb44",
     "c2_scheduled/aggregation_byte_calibration.json": "65eeaf15c8560688fc0386d7c4eed653a2bc425fdae3bb0027114e8ea6017a28",
     "native_adaptive_smoke/summary.json": "d5797da8d18a419587c779702847505ab39500e3a6a018c637a041d062b1ae2d",
-    "final_restoration.json": "1523351663b4a819caa6fbc0904849e4931f89bd732bc46ca5ae5a71a1cea6dd"
+    "final_restoration.json": "b227f96827e45c388baf2b8e2d48b4611d9ecbc33522f0ea3368d91ac6a415e0",
+    "c2_aggregation_confirmation/aggregation_analysis.json": "2a5ea86a4dee16e0d143a03ae5ca7ef6625dd237daf4b45255045aba1594e3d2",
+    "c2_aggregation_confirmation/summary.json": "0ed1047c641948739c0894172a361db72ad7bc9bf12a6ed318022fc50b8cd67b",
+    "c2_aggregation_confirmation/aggregation_byte_calibration.json": "c01edfc9643e5190da2c66c74482140a877cee5c1272b7c8aa727be4c5c3d269",
+    "native_adaptive_final/summary.json": "66ff920887396c34116f841ae31860cd68c7e5da1cc38e6ea46c01a1e0fd977b",
+    "actual_native_gate_rejection.json": "f8159b62ad66034439cfc5cd210bf720c2e451a5b91b07ba0f5166db65976c04"
   },
-  "scope": "Operational MT7921 calibration; original TX-inclusive busy assumption rejected. Not intrinsic PHY airtime or universal adaptive approval."
+  "scope": "Operational MT7921 calibration; original TX-inclusive busy assumption rejected. Not intrinsic PHY airtime or universal adaptive approval.",
+  "primary_C2": "c2_aggregation_confirmation",
+  "primary_adaptive": "native_adaptive_final",
+  "prior_C2": "c2_scheduled (supporting data, collected before final coefficient freeze)",
+  "all_primary_validation_after_coefficient_freeze": true
 }

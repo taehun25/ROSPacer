@@ -4,6 +4,7 @@ Wired feedback ends before govern to exercise stale-input holds. DDS remains
 on Wi-Fi; this radio/control check makes no end-to-end latency claim.
 """
 import csv
+import argparse
 import hashlib
 import json
 import math
@@ -20,15 +21,15 @@ from rospacer.model import synthesize
 
 
 def main():
-    base=ROOT/'runs/w1_20261013_radio_input_retry';out=base/'native_adaptive_smoke';out.mkdir(exist_ok=True)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--label',default='native_adaptive_smoke');a=parser.parse_args()
+    base=ROOT/'runs/w1_20261013_radio_input_retry';out=base/a.label;out.mkdir(exist_ok=False)
     c=Control('192.168.50.2','192.168.0.5','Wi-Fi 2',out);c.bind='192.168.0.11'
     cam=object.__new__(Campaign);cam.c=c;cam.homes={'4':'/home/csilab','5':'/home/csi'};cam.ips={'4':'192.168.0.4','5':'192.168.0.5'}
     aggregation=json.loads((base/'frozen_aggregation_coverage_profile.json').read_text());packet=json.loads((base/'frozen_radio_profile_v3_packet.json').read_text())
     proofs={}
-    for folder in ['dds_confirmation','b2_aggregation_confirmation','c2_scheduled_radio']:
+    c2_label='c2_aggregation_confirmation' if (base/'c2_aggregation_confirmation/aggregation_analysis.json').exists() else 'c2_scheduled'
+    for folder in ['dds_confirmation','b2_aggregation_confirmation',c2_label]:
         path=base/folder/'aggregation_analysis.json'
-        if not path.exists() and folder=='c2_scheduled_radio':
-            candidates=list(base.glob('c2*/aggregation_analysis.json'));assert len(candidates)==1;cpath=candidates[0];path=cpath
         data=json.loads(path.read_text());rows=data['rows']
         if folder=='dds_confirmation':assert all(x['self_pass'] for x in rows)
         else:

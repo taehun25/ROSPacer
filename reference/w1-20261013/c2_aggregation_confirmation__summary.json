@@ -1,0 +1,71 @@
+{
+  "trials": [
+    {
+      "name": "C2scheduled_1",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 205.69303321303804,
+      "receiver_full_Mbps": 208.12316522089773,
+      "receiver_duration_s": 30.10371283441782,
+      "steady_window_s": 22.999981701374054,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": true,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load",
+      "background_restored_12": true,
+      "background_restored_10": true
+    },
+    {
+      "name": "C2scheduled_2",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 209.49124819785612,
+      "receiver_full_Mbps": 211.016979788036,
+      "receiver_duration_s": 30.207153975963593,
+      "steady_window_s": 23.00009399652481,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": true,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load",
+      "background_restored_12": true,
+      "background_restored_10": true
+    },
+    {
+      "name": "C2scheduled_3",
+      "sender": "4",
+      "mode": "relay",
+      "interval_s": 0.2,
+      "requested_bps": 0,
+      "seconds": 30,
+      "receiver_Mbps": 205.7752420432972,
+      "receiver_full_Mbps": 211.96786314904134,
+      "receiver_duration_s": 30.08094484359026,
+      "steady_window_s": 22.999664843082428,
+      "client_rc": 0,
+      "protocol_valid": true,
+      "intentional_competition": true,
+      "server_error": null,
+      "scope": "UDP1400B iperf30s, mean capacity in middle interval3..27s; counter analysis uses middle sender window; no PC commands during radio load",
+      "background_restored_12": true,
+      "background_restored_10": true
+    }
+  ],
+  "sources_sha256": {
+    "w1_scheduled_radio.py": "db5abbf7e4e86aaa7fd8cdf92684b63d615a31a9f14387e2575e9a6960cadd51",
+    "w1_counter_worker.py": "2818683928e9bca3d659f4f3664d45e1f9298474b425ac25ef9055848fb6c147",
+    "w1_background_udp.py": "4e8cfe2c89a039740cb48e09e652e1d30760f93a31ba2181991eeb0bddc38c29"
+  },
+  "main_ip": {
+    "5": "192.168.0.6",
+    "4": "192.168.0.5"
+  },
+  "normal_adaptive_qualified": false
+}

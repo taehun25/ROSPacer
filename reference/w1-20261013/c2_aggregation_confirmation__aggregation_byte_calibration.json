@@ -1,0 +1,8 @@
+{
+  "source": "quiet only; competitor data not used",
+  "observed_ratio": 1.149915766118701,
+  "coverage_scale": 1.207411554424636,
+  "normal_adaptive_qualified": false,
+  "frozen_parent": "c2_scheduled/aggregation_byte_calibration.json",
+  "parent_sha256": "65eeaf15c8560688fc0386d7c4eed653a2bc425fdae3bb0027114e8ea6017a28"
+}

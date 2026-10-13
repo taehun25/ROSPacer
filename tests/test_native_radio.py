@@ -1,4 +1,6 @@
 import copy
+import hashlib
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from rospacer.native_radio import estimate,count_delta
@@ -43,6 +45,15 @@ class NativeRadioInputTests(unittest.TestCase):
         cfg={'native_radio_calibration':{'validated':False},'native_reader':'unused','receiver_feedback':{}}
         with patch('rospacer.linux.Shaper') as shaper:
             with self.assertRaisesRegex(ValueError,'validation gate'):govern(cfg,1,'unused.csv')
+            shaper.assert_not_called()
+
+    def test_out_of_scope_ap_is_rejected_before_qdisc_install(self):
+        from rospacer.native_radio import govern
+        profile={**self.profile,'validated':True,'kernel_release':'test','module_srcversions':{},'payload_bytes':1048576,'reader_sha256':hashlib.sha256(b'test').hexdigest()}
+        cfg={'native_radio_calibration':profile,'native_reader':'unused','receiver_feedback':{},'payload_bytes':1048576,'dev':'wlp2s0'}
+        wrong={**self.old,'AP':'other'}
+        with patch('rospacer.native_radio.os.uname',return_value=SimpleNamespace(release='test'),create=True), patch('rospacer.native_radio.Path.read_bytes',return_value=b'test'), patch('rospacer.native_radio.snapshot',return_value=wrong), patch('rospacer.linux.Shaper') as shaper:
+            with self.assertRaisesRegex(ValueError,'AP outside'):govern(cfg,1,'unused.csv')
             shaper.assert_not_called()
 
 

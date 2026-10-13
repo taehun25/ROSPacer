@@ -47,11 +47,15 @@ def count_delta(first,last,key):
     return d
 
 
+def check_scope(profile,sample):
+    if sample['AP']!=profile['AP']:raise ValueError('AP outside calibrated scope')
+    if sample['frequency_MHz']!=profile['frequency_MHz'] or sample['width_MHz']!=profile['width_MHz']:raise ValueError('channel outside calibrated scope')
+
+
 def estimate(profile,source_old,source_new,receiver_old,receiver_new):
     for old,new in [(source_old,source_new),(receiver_old,receiver_new)]:
         if old['boot_id']!=new['boot_id'] or old['AP']!=new['AP']:raise ValueError('radio identity changed')
-        if new['AP']!=profile['AP']:raise ValueError('AP outside calibrated scope')
-        if new['frequency_MHz']!=profile['frequency_MHz'] or new['width_MHz']!=profile['width_MHz']:raise ValueError('channel outside calibrated scope')
+        check_scope(profile,new)
     dt=source_new['active_s']-source_old['active_s'];dr=receiver_new['active_s']-receiver_old['active_s']
     if min(dt,dr)<=0:raise ValueError('stale active counter')
     busy=count_delta(source_old,source_new,'busy_s');own=count_delta(source_old,source_new,'tx_s')
@@ -103,6 +107,7 @@ def govern(cfg,seconds,trace,dry_run=False):
         if Path('/sys/module',name,'srcversion').read_text().strip()!=digest:raise ValueError('driver outside calibrated scope')
     if profile.get('payload_bytes')!=cfg['payload_bytes'] or cfg['payload_bytes']!=1048576:raise ValueError('payload outside W1 calibration')
     if hashlib.sha256(Path(reader).read_bytes()).hexdigest()!=profile['reader_sha256']:raise ValueError('native statistics reader changed')
+    check_scope(profile,snapshot(cfg['dev'],reader))
     if dry_run:return {'mode':'adaptive','changed_system':False,'input_contract':'native-calibrated-receiver-feedback'}
     sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);sock.bind((feedback['bind'],feedback['port']));sock.setblocking(False)
     src=deque();recv=deque();cap=cfg['cap_packet_Bps'];end=time.monotonic()+seconds;shaper=Shaper(cfg)

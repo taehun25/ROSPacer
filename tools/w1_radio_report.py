@@ -30,7 +30,10 @@ def main():
     out=DEST/'결과/W1 실험결과';out.mkdir(parents=True,exist_ok=True)
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     dd=load('dds_confirmation/aggregation_analysis.json')['rows'];trials=load('dds_confirmation/summary.json')['trials'];ddt={r['name']:r for r in trials}
-    b2=load('b2_aggregation_confirmation/aggregation_analysis.json')['rows'];c2=[r for r in load('c2_scheduled/aggregation_analysis.json')['rows'] if r['name']!='quiet'];smoke=load('native_adaptive_smoke/summary.json')['trials'];p=load('frozen_aggregation_coverage_profile.json');pk=load('frozen_radio_profile_v3_packet.json')
+    c2_label='c2_aggregation_confirmation' if (BASE/'c2_aggregation_confirmation/aggregation_analysis.json').exists() else 'c2_scheduled'
+    smoke_label='native_adaptive_final' if (BASE/'native_adaptive_final/summary.json').exists() else 'native_adaptive_smoke'
+    b2=load('b2_aggregation_confirmation/aggregation_analysis.json')['rows'];c2=[r for r in load(c2_label+'/aggregation_analysis.json')['rows'] if r['name']!='quiet'];smoke=load(smoke_label+'/summary.json')['trials'];p=load('frozen_aggregation_coverage_profile.json');pk=load('frozen_radio_profile_v3_packet.json')
+    c2_range=f"{min(r['error_fraction'] for r in c2)*100:.3f}~{max(r['error_fraction'] for r in c2)*100:.3f}%"
     restored=load('final_restoration.json');assert all(restored[h]['power']['restored'] and restored[h]['wire']['restored'] and not restored[h]['remaining_jobs'] for h in ['4','5'])
     title='W1 무선 입력 추가 검증 · 2026-10-13'
     style='body{margin:0;background:#f4f6fa;color:#203047;font:16px/1.8 "Malgun Gothic",sans-serif}main{max-width:1120px;margin:30px auto;background:white;padding:32px}h1{font-size:30px}h2{margin-top:38px;border-bottom:2px solid #dde5ef}table{border-collapse:collapse;width:100%;font-size:14px;margin:16px 0}td,th{padding:10px;border-bottom:1px solid #dce4ed;text-align:left;vertical-align:top}th{background:#edf2fa}.scroll{overflow:auto}.status{padding:18px;background:#fff1db;border-left:5px solid #b27719}details{border:1px solid #d4deeb;border-radius:8px;margin:16px 0;background:#f8fafc}summary{padding:12px;cursor:pointer;font-weight:bold}.note{padding:0 18px 14px}code{font:13px/1.6 Consolas,monospace;overflow-wrap:anywhere}pre{background:#edf2f8;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#165aba}.muted{color:#587086;font-size:14px}li{margin:9px 0}@media(max-width:700px){main{margin:0;padding:18px}}@media print{main{margin:0;padding:0}details{break-inside:auto}table{font-size:10px}.scroll{overflow:visible}}'
@@ -100,9 +103,23 @@ T̂self-visible = hBA × 송신측 RX_BA_count
     s+='<p>'+raw('native_adaptive_smoke/summary.json')+' · '+raw('native_adaptive_smoke/qualified_input_profile.json')+' · '+raw('native_adaptive_smoke/fastdds/4/govern.csv','Fast 제어 CSV')+' · '+raw('native_adaptive_smoke/cyclonedds/4/govern.csv','Cyclone 제어 CSV')+'</p>'
     s+='<h2>8. 독립 프레임 참조와 물리적 해석의 한계</h2><p>5번에서 관리 인터페이스와 같은149번/80MHz로 임시 monitor를 만들고18초 캡처했다. UDP100Mb/s·10초의4→5 중계가 포함됐다. 80,754프레임, kernel capture drop0이며 monitor 삭제를 확인했다. 독립 PHY 참조는 AP→5 HE 데이터13,031개에서 MCS11·NSS2·80MHz·GI0.8µs·1201Mb/s, A-MSDU를 확인했다. 흔한 MAC 프레임 길이는10,188B로 여러 UDP 데이터의 묶음이었다.</p><p><b>AP b0:38:6c:7d:f5:74(AX1500)→3c:0a:f3:02:e4:c7(5번)</b>은 하향 사용자 데이터, <b>AP→3c:0a:f3:02:d9:3b(4번)</b>은 원송신자에 대한 BlockAck 방향이다. 후자의 BA12,959개는24Mb/s·해석 duration32µs였다. AP-only에서 교정한 effective BA31.754µs는 이 참조와 약0.77% 차이다. 이는 AP 응답 비용의 한 구성요소를 지지한다.</p><p>HE 데이터의 <code>wlan_radio.duration</code>은 비어 있고 LTF 정보도 완전하지 않았다. AMPDU reference가 각 데이터에 유일하게 붙는 현상을 물리적 PPDU 전체 분리 증명으로 간주하지 않았다. <b>전체 HE airtime 합과 단일 intrinsic O는 확정할 수 없다.</b> native RX duration의0 증분도 실제 수신 airtime0이 아니다. 별도 관측 장비 구매가 꼭 필요한지는 현재 자료만으로 단정할 수 없으며, 먼저 완전한 HE/PPDU 메타데이터를 제공하는 관측 경로가 필요한 상태다.</p><p>'+raw('rx_reference/air.pcap')+' · '+raw('rx_reference/frames_fields.txt')+'</p>'
     s+='<h2>9. 복원·재현·W1 판정</h2><p>4·5번 전원 guard 종료 영수증과 최종 조회에서 Wi-Fi 절전on, CPU powersave, rmem/wmem212992, Wi-Fi root qdisc noqueue, 실험 프로세스 종료, 임시 monitor 없음, AX1500 연결을 확인했다. 임시50.1/50.2 주소만 제거했고 랜 케이블은 유지했다. NetworkManager 저장 프로파일과 원래 연구 DDS 설치는 수정하지 않았다. 기존 서명 survey 수정 모듈과 MOK 신뢰는 유지했다.</p><p>12·10번 경쟁 프로세스도 유한 실행 후 종료하며 각회 sysctl 복원을 확인했다. 최종 rmem/wmem은212992였다. 이번 작업은 드라이버를 추가 수정하거나 일반 sudo 권한을 확대하지 않았다.</p><p>결과와 해시는 '+raw('final_restoration.json','최종 복원 JSON')+' 및 <code>ROSPacer/runs/'+BASE.name+'</code>에 있다. source 기준 커밋: <code>'+commit+'</code>. 실행 시 소스 SHA는 각 summary/provenance에 보존한다. 소스/단위·결측·신원 gate의 자동 검사38개가 통과했다.</p><p><b>판정:</b> 이번에 요청한 polling·포함 관계·aggregation 교정·별도 자기 부하/B2/C2·수정 제어기 기능 검사는 현재 장비 범위에서 끝났다. 원 proposal의 tx≤busy 및 단일 물리 O 가정은 수정해야 한다는 연구 결과다. 따라서 기존 원식을 그대로 둔 W1 전체 승인이나 모든 환경의 adaptive 검증 완료라고 표시하지 않는다. 물리적 O의 전체 독립 비교는 남은 확인 항목이며, 다음 성능 실험은 이 조건부 범위와 제어 입력을 명시해 수행할 수 있다. Zenoh는 사용자 개발 순서에 따라 후속이다.</p>'
+    if c2_label=='c2_aggregation_confirmation':
+        s=s.replace('C2는 계수 학습에 쓰지 않았던 3회다.','C2도 계수 고정 이후 새로 측정한3회다.')
+        s=s.replace('시간 순서상 C2는 계수 고정 전에 수집된 별도 자료이며, 계수 고정 뒤 새 수집한 완전 전향 검증이라고 부르지 않는다.','처음 C2는 계수 고정 전에 수집됐으므로 보조 자료로 남겼고, 최종 판정에는 계수 고정 후 새3회를 사용했다. 기존 quiet에서 정한 바이트 정규화와 용량 비용을 고정하고 새 경쟁 결과를 맞추는 데 사용하지 않았다.')
+        s=s.replace('c2_scheduled/summary.json','c2_aggregation_confirmation/summary.json').replace('c2_scheduled/aggregation_analysis.json','c2_aggregation_confirmation/aggregation_analysis.json')
+    if smoke_label=='native_adaptive_final':
+        s=s.replace('native_adaptive_smoke/',smoke_label+'/')
+        ranges=[]
+        for r in smoke:
+            rows=list(csv.DictReader((BASE/smoke_label/r['rmw']/'4/govern.csv').open()))
+            ranges.append(f"{r['rmw']} {min(float(x['cap_packet_Bps']) for x in rows)*8/1e6:.3f}~{max(float(x['cap_packet_Bps']) for x in rows)*8/1e6:.3f}Mb/s")
+        s=s.replace('Fast122.935~300.450Mb/s, Cyclone64.478~300.450Mb/s',' · '.join(ranges))
+        s=s.replace('각51회의 결측 보류',f"Fast{smoke[0]['stale_feedback_holds']}회·Cyclone{smoke[1]['stale_feedback_holds']}회의 결측 보류")
+    s=s.replace('자동 검사38개','자동 검사39개')
     s+='</main></body></html>';(out/NAME).write_text(s,encoding='utf8')
     path=DEST/'W1 보고서.html';original=path.read_text(encoding='utf8');backup=BASE/'W1_report_before_radio_addendum.html'
     if not backup.exists():backup.write_text(original,encoding='utf8')
+    else:original=backup.read_text(encoding='utf8')
     original=re.sub(r'<div class="status">.*?</div>', '<div class="status"><b>10월13일 갱신: 수정 무선 입력 모델은 범위 내 통과 · W1 전체 판정은 조건부</b><p>교정에 사용하지 않은 1MiB DDS 자기 부하6조건과 B2·C2 각3회의 오차 기준을 통과했다. 두 DDS의 실제 adaptive 갱신·결측 보류·복원도 확인했다. 기존 tx≤busy 가정과 단일 물리 O는 승인하지 않았으며 장비별 운용 모델로 수정했다. 정확한 HE/PPDU airtime 합의 독립 식별은 남아 있다.</p><p><a href="결과/W1 실험결과/'+NAME+'">10월13일 추가 검증: 조건·수정식·실측값·판정 전체 보기</a></p></div>',original,count=1,flags=re.S)
     original=original.replace('이 보고서의 측정 기준일: 2026년 10월 12일','측정 기준일: 2026년 10월 12일 · 무선 입력 추가 검증: 10월 13일')
     original=re.sub(r'<p class="revision">측정:2026-10-12.*?</p>','<p class="revision">10월12일 수치는 당시 측정값으로 보존 · 최신 무선 입력 판정:2026-10-13 · 서로 다른 날짜의 교정값을 합치지 않음</p>',original,count=1,flags=re.S)
@@ -121,6 +138,12 @@ T̂self-visible = hBA × 송신측 RX_BA_count
     original=original.replace('10월12일 기록 · 10월12일 기록 · ','10월12일 기록 · ')
     for n in ['W1 구현 전제 검증_261012.html','W1 149채널 B2 추가 검증_261012.html','W1 4·5번 유선 동기화 및 계수기 검증_261012.html']:
         original=original.replace('href="결과/'+n+'"','href="결과/W1 실험결과/'+n+'"')
+    original=original.replace('예측 오차2.239~5.415%, 모두20% 이내','예측 오차'+c2_range+', 모두20% 이내')
+    original=original.replace('C2 2.24~5.41%; 모두20% 이내','C2 '+c2_range+'; 모두20% 이내')
+    if smoke_label=='native_adaptive_final':
+        updates=f"{smoke[0]['updated']}/{smoke[1]['updated']}"
+        original=original.replace('갱신106/121회',f'갱신{updates}회').replace('갱신106/121회',f'갱신{updates}회')
+        original=original.replace('각51회 피드백 결측 보류',f"Fast{smoke[0]['stale_feedback_holds']}회·Cyclone{smoke[1]['stale_feedback_holds']}회 피드백 결측 보류")
     path.write_text(original,encoding='utf8')
     # Rebase file links when copying the entry report three levels deeper.
     def rebase(m):

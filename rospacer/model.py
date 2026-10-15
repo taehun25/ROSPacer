@@ -100,7 +100,9 @@ def adaptive_rate(cfg, delta, relay_in_survey):
     busy, own = delta["busy_s"], delta["tx_s"]
     if elapsed <= 0 or not (0 <= own <= busy <= elapsed*1.1):
         raise ValueError("invalid survey counter deltas")
-    up, down = delta["tx_Bps"], delta["rx_Bps"]
+    from .peer_phy import rate as calibrated_peer_rate
+    peer_rate=calibrated_peer_rate(cfg)
+    up, down = delta["tx_Bps"], peer_rate if peer_rate is not None else delta["rx_Bps"]
     if up <= 0 or down <= 0:
         raise ValueError("missing PHY rate")
     retry = delta["retries"] / max(1, delta["packets"])

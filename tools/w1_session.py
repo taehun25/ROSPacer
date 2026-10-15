@@ -31,12 +31,13 @@ def restore(folder):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('mode',choices=['begin','end','guard']);p.add_argument('--folder',required=True);p.add_argument('--dev',required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('mode',choices=['begin','end','guard']);p.add_argument('--folder',required=True);p.add_argument('--dev',required=True);p.add_argument('--expiry-seconds',type=int,default=3600);a=p.parse_args()
+    if not 60<=a.expiry_seconds<=21600:p.error('expiry must be 60..21600 seconds')
     if os.geteuid()!=0:raise RuntimeError('root required')
     folder=Path(a.folder).resolve()
     if 'ROSPacer' not in folder.parts or 'runs' not in folder.parts:raise ValueError('unexpected artifact path')
     if a.mode=='guard':
-        deadline=time.monotonic()+3600
+        deadline=time.monotonic()+a.expiry_seconds
         while time.monotonic()<deadline and not (folder/'end_session').exists():time.sleep(2)
         restore(folder)
         return
@@ -51,8 +52,8 @@ def main():
       'governors':{str(p):p.read_text().strip() for p in Path('/sys/devices/system/cpu').glob('cpu[0-9]*/cpufreq/scaling_governor')},
       'sysctl':{k:int(run(['sysctl','-n',k])) for k in ['net.core.rmem_max','net.core.wmem_max']},'qdisc':roots}
     (folder/'baseline.json').write_text(json.dumps(baseline,indent=2))
-    guard=subprocess.Popen(['python3',str(Path(__file__).resolve()),'guard','--folder',str(folder),'--dev',a.dev],stdin=subprocess.DEVNULL,stdout=open(folder/'guard.log','w'),stderr=subprocess.STDOUT,start_new_session=True)
-    (folder/'guard_pid.json').write_text(json.dumps({'pid':guard.pid,'expiry_s':3600}))
+    guard=subprocess.Popen(['python3',str(Path(__file__).resolve()),'guard','--folder',str(folder),'--dev',a.dev,'--expiry-seconds',str(a.expiry_seconds)],stdin=subprocess.DEVNULL,stdout=open(folder/'guard.log','w'),stderr=subprocess.STDOUT,start_new_session=True)
+    (folder/'guard_pid.json').write_text(json.dumps({'pid':guard.pid,'expiry_s':a.expiry_seconds}))
     try:
         run(['iw','dev',a.dev,'set','power_save','off'])
         for path in baseline['governors']:Path(path).write_text('performance')

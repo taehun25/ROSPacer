@@ -1,0 +1,15 @@
+{
+  "ratio_to_original_C0": 0.9738062889143949,
+  "within_10_percent": true,
+  "independent_validation": {
+    "eligible_windows": 48,
+    "valid_windows": 48,
+    "usable_fraction": 1.0,
+    "predicted_Mbps": 321.60248284735906,
+    "measured_Mbps": 359.09074720889726,
+    "relative_error": 0.10439774528562218,
+    "residual_median": 0.1382384064116411,
+    "hold_reasons": {},
+    "passed": true
+  }
+}

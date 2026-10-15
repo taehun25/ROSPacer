@@ -1,0 +1,237 @@
+{
+  "predecessor": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep",
+  "retained_measured": 33,
+  "retained_scope_gates": 6,
+  "rerun_all_F": true,
+  "reason": "phase ports isolated and scheduled independently; use a consistent corrected F generator for all modes/repetitions",
+  "excluded_from_new_primary": [
+    {
+      "id": "T1_F_fastdds_static_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_static_r1"
+    },
+    {
+      "id": "T1_F_fastdds_fixed_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_fixed_r1"
+    },
+    {
+      "id": "T1_F_fastdds_vendor_fc_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_vendor_fc_r1"
+    },
+    {
+      "id": "T1_F_fastdds_adaptive_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_adaptive_r1"
+    },
+    {
+      "id": "T1_F_fastdds_default_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_default_r1"
+    },
+    {
+      "id": "T1_F_fastdds_vendor_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_vendor_r1"
+    },
+    {
+      "id": "T1_F_cyclonedds_fixed_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_fixed_r1"
+    },
+    {
+      "id": "T1_F_cyclonedds_adaptive_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_adaptive_r1"
+    },
+    {
+      "id": "T1_F_cyclonedds_static_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_static_r1"
+    },
+    {
+      "id": "T1_F_cyclonedds_default_r1",
+      "status": "impairment_unqualified",
+      "reason": "competitor client failed",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_default_r1"
+    },
+    {
+      "id": "T1_F_cyclonedds_vendor_r1",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_vendor_r1"
+    },
+    {
+      "id": "T1_F_fastdds_vendor_fc_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_vendor_fc_r2"
+    },
+    {
+      "id": "T1_F_fastdds_vendor_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_vendor_r2"
+    },
+    {
+      "id": "T1_F_fastdds_adaptive_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_adaptive_r2"
+    },
+    {
+      "id": "T1_F_fastdds_static_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_static_r2"
+    },
+    {
+      "id": "T1_F_fastdds_fixed_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_fixed_r2"
+    },
+    {
+      "id": "T1_F_fastdds_default_r2",
+      "status": "impairment_unqualified",
+      "reason": "competitor client failed",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_default_r2"
+    },
+    {
+      "id": "T1_F_cyclonedds_fixed_r2",
+      "status": "impairment_unqualified",
+      "reason": "competitor client failed",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_fixed_r2"
+    },
+    {
+      "id": "T1_F_cyclonedds_vendor_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_vendor_r2"
+    },
+    {
+      "id": "T1_F_cyclonedds_default_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_default_r2"
+    },
+    {
+      "id": "T1_F_cyclonedds_adaptive_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_adaptive_r2"
+    },
+    {
+      "id": "T1_F_cyclonedds_static_r2",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_static_r2"
+    },
+    {
+      "id": "T1_F_fastdds_adaptive_r3",
+      "status": "impairment_unqualified",
+      "reason": "competitor client failed",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_adaptive_r3"
+    },
+    {
+      "id": "T1_F_fastdds_static_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_static_r3"
+    },
+    {
+      "id": "T1_F_fastdds_vendor_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_vendor_r3"
+    },
+    {
+      "id": "T1_F_fastdds_vendor_fc_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_vendor_fc_r3"
+    },
+    {
+      "id": "T1_F_fastdds_fixed_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_fixed_r3"
+    },
+    {
+      "id": "T1_F_fastdds_default_r3",
+      "status": "impairment_unqualified",
+      "reason": "competitor client failed",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_fastdds_default_r3"
+    },
+    {
+      "id": "T1_F_cyclonedds_default_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_default_r3"
+    },
+    {
+      "id": "T1_F_cyclonedds_adaptive_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_adaptive_r3"
+    },
+    {
+      "id": "T1_F_cyclonedds_vendor_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_vendor_r3"
+    },
+    {
+      "id": "T1_F_cyclonedds_fixed_r3",
+      "status": "impairment_unqualified",
+      "reason": "competitor client failed",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_fixed_r3"
+    },
+    {
+      "id": "T1_F_cyclonedds_static_r3",
+      "status": "measured",
+      "reason": "",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_F_cyclonedds_static_r3"
+    },
+    {
+      "id": "T3_E_fastdds_default_r3",
+      "status": "timing_unqualified",
+      "reason": "T3 publisher start deviates >1s from common schedule",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T3_E_fastdds_default_r3"
+    },
+    {
+      "id": "P0_low_0.6_fastdds_default_r1",
+      "status": "failed",
+      "reason": "publisher failed; raw logs retained",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\P0_low_0.6_fastdds_default_r1"
+    },
+    {
+      "id": "P0_low_0.6_fastdds_static_r1",
+      "status": "failed",
+      "reason": "publisher failed; raw logs retained",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\P0_low_0.6_fastdds_static_r1"
+    },
+    {
+      "id": "P0_low_0.6_cyclonedds_static_r1",
+      "status": "failed",
+      "reason": "publisher failed; raw logs retained",
+      "source": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\P0_low_0.6_cyclonedds_static_r1"
+    }
+  ],
+  "original_data_changed": false,
+  "started_KST": "2026-10-15 11:29:40",
+  "rerun_all_T3": true,
+  "T3_barrier_protocol": true,
+  "pending_planned": 168,
+  "T3_reason": "warmup publish calls block beyond nominal start; independent publishers require a common post-warmup start marker; redo all 27 eligible T3 rows for a consistent protocol"
+}

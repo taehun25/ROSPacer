@@ -6,3 +6,6 @@
 *.xsd text eol=lf
 *.json text eol=lf
 *.conf text eol=lf
+
+# Frozen W2 evidence: retain original bytes so recorded SHA-256 survives checkout.
+reference/w2-20261015/** -text whitespace=cr-at-eol

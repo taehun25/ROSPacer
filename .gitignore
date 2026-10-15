@@ -15,3 +15,13 @@ dist/
 *.pem
 *.key
 /reference/*.cpp
+
+# Local experiment scratch files and credentials (not part of research snapshots)
+/tmp/
+*.pcap
+*.pcapng
+*.p12
+*.pfx
+*.der
+.env.*
+!.env.example

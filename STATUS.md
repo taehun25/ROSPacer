@@ -1,5 +1,51 @@
 # ROSPacer 구현 및 날짜별 검증 기록
 
+## 2026-10-13 · W1 범위와 종료 재점검
+
+원 proposal W1은 모델 입력·O 교정/비교·역압·최소 갱신기·시운전이다.
+정식 Adaptive 우위/E/F 추종은W2 이후, full drain ablation은W4이므로 이번엔 제외했다.
+새 B2 정상body64.59%/오류CRC후보91.72%; 입력 부족 보류를 재확인했다.
+monitor 종료 후4의 ping/SSH 연결도 실패해 유선으로 회수·동일 AP 재연결 후 복구했다.
+기존 SSH IPQoS 수정과 별개의 접속 단계 실패이며 exact firmware 원인은 미확정이다.
+6개 캡처의 HE-LTF 기호 수/pre-FEC padding known 및 AMPDU last known은0이다.
+raw LTF size1은 있지만 PPDU 전체와 intrinsic O의 독립 식별에는 부족하다.
+4/5/12/10 qdisc·class·monitor·실험 프로세스·커널 버퍼 복원 재검사 전부 통과.
+4/5 연구 DDS 각6개 실측 로드 해시 일치. 12/10은 동일 원본 비교 기준 없음.
+원자료·환경·실제 dirty 소스 archive와 SHA 인덱스를 별도로 보존한다.
+원자료: runs/w1_20261013_w1_closeout; 보고서: W1 항목별 상태점검_261013.html.
+
+## 2026-10-13 · 4번 Wi-Fi SSH 수정 확인
+
+5→4 SSH는 TOS0x10→0x08 전환 직후4→5 응답이 수신 캡처에 없어 재전송했다.
+4 SSH 서버에 별도 drop-in IPQoS0x00을 적용하고 설정 검사·reload했다.
+원래 lowdelay/throughput으로 잠시 되돌리면8초 timeout, 재적용하면 직접 Wi-Fi
+SSH10회 연속 성공 및 양방향 각1MiB SHA 일치를 확인했다. 임시 PC tunnel과
+추가 sshd/capture는 종료했다. NIC/DDS/qdisc 설정 변경 없음. AP 내부/driver의
+정확한 손실 위치는 미확정이고 B2 passive CRC 누락이 해결됐다는 뜻은 아니다.
+증거: runs/w1_20261013_ssh_repair; 진단 HTML의10절. 기존 미해결 영수증은 당시 기록.
+
+## 2026-10-13 · Sender B2 관측 누락 진단 보강
+
+6개 유효 CRC/control 진단과 실패 반복을 `runs/w1_20261013_sender_gap`에 보존했다.
+B2에서 정상 body32.13%→오류 CRC 잠정 포함72.74%, HW FCS3765 증가를 관측했다.
+호스트 kernel drop0; source TX0 observer도 누락이 남아 own-TX 단일 설명을 배제했다.
+CTS에는 TA가 없고 RA=AP라 기존 필터에 누락됨을 확인했다. AP 제어 필터·FCS 진단·
+RTS/CTS/BA 후보·FCS 가용성 로그를 실제 sender 경로에 추가했다. CRC 오류 byte는
+추정에 쓰지 않는다. 보강 B2 RTS 개수 비율89.79%; 정상 body58.66%다.
+NAV와 BA timestamp 차이99µs가 남아 airtime 대체/제어 승인은 보류한다.
+강화 Fast/Cyclone shadow 각120/120수신·유효 추정47/19회, HTB 없음. 자동 검사52개 통과.
+`validated=false`와 Receiver-assisted 경로를 유지한다. 세부 판정과 복원은 새 진단 HTML 참조.
+
+## 2026-10-13 · Sender-only 프로토타입
+
+Receiver-assisted를 유지한 별도 sender-local monitor/HE/MAC 추정 경로를 구현했다.
+Fast/Cyclone 무경쟁 Static1MiB shadow는 각각76/44회 유효 추정, 각120/120 수신이었다.
+B2 topology의 연속 경쟁 진단에서는 중계 관측 비율18.84%라 보류했다.
+`adaptive-sender`는 미승인 프로파일의 HTB 설치를 거부한다. 정식 B2/C2 및 자동
+HTB 성능 검증 완료로 처리하지 않는다. 모델·게이트·파서·복원 관련 전체48개 검사가 통과했다.
+4/5/12/10의 유한 실험 종료와 임시 설정 복원은 `runs/w1_20261013_sender_only/final_restoration.json`에 있다.
+자세한 조건과 한계는 [개발 기록](docs/sender-only-prototype.md)을 따른다.
+
 ROSPacer 0.1 초기 구현이다. proposal IV의 정적 설정 생성, HTB+fq 송신 제어,
 sender 통계 수집 및 적응식 계산을 구현했다. 적응형 Wi-Fi 성능 검증은 완료하지 않았다.
 
@@ -425,3 +471,179 @@ phase4 power/wire도 종료하고4/5복원true·남은 실험프로세스없음�
 현재 장비의 수정 운용 모델만 범위 내 승인하며 전체 HE/PPDU airtime·intrinsic O의
 독립 식별과 보편 adaptive 성능 판정은 계속 구분한다. 원자료와 버전 관리된 근거는
 동일한 경로에 보존한다. 최신 보고서의 C2와 제어기 표는 이 최종 결과를 따른다.
+
+
+#### Sender-only 입력 충분성·안정성 추가 검증 (10/13 시작, 10/14 종료)
+
+원자료 runs/w1_20261013_sender_validation. 고정 v2 프로파일 재교정 없음,
+receiver 통계는 사후 참조만 사용, HTB 미적용 shadow. UDP 자기 부하0.2/0.5/0.8
+각2회 정상 구간 계산100%, |beta|p95<=4.39%; 재연결 없는 종료 성공.
+깨끗한 포화2회 용량 오차20.65%/19.74%로 첫 run 기준 초과.
+B2 연속300Mb/s 요청 경쟁2회 관측 coverage 중앙91.3%, 계산 가능63.74/77.17%.
+보류는 하향 PHY 교정 범위 이탈; 첫 캡처1201/1081/961Mb/s를 실제 읽었고
+unknown PHY body0이었다. 관측 결측과 모델 적용 범위 문제를 구분한다.
+DDS Fast/Cyclone 각120/120, 정상 구간 계산73.33/100%; 실제 runtime 해시 확인.
+절전on→monitor off→종료on 전환 시험은 ping 성공·SSH 접속 시간 초과,
+유선 NM 재연결로 복구. 종료 안정성 실패를 유지한다.
+C2는10번 root AP전환 helper 미준비로 사용자 퇴근 제약에 따라 건너뛰었다.
+56개 단위검사 통과. 네 장비 최종 설정 복원과 기존4/5 연구DDS 해시 일치 확인.
+최종 IPv4 감사에서5 접속 불안정이 발생해 기존 Wi-Fi IPv6 link-local SSH로
+4/5를 검사했다. 추가 root/인증 권한 없이 완료; IPv4 문제 자체는 미해결.
+Sender-only validated=false와 Receiver-assisted를 유지한다. 자동제어 미승인.
+보고서: W1 Sender-only 입력 충분성·안정성 검증_261013.html.
+
+#### Sender-only 두 위치 PHY 교정 및 독립 재검증 (2026-10-14)
+
+원자료 `runs/w1_20261014_sender_multiphy`. 두 위치의 UDP50/150/포화 및
+DDS2개를 교정 자료로만 사용해 계수와 PHY 범위를 고정한 뒤9개 조건을 새로
+검증했다. 추가 물리 이동은 불가했고 bitrate mask는 드라이버가-95로 거부했다.
+TX power, 커널 모듈, Receiver-assisted, 기존 연구 DDS는 변경하지 않았다.
+새 상향 입력은 같은 창의 byte/retry 가중 조화 평균. 명시된 OFDM ARP PHY는
+읽되 알 수 없는 HE/HT/VHT와 CRC 실패는 승격하지 않는다.
+
+직접 CRC-valid relay 관측 모델은 유지했다. 별도 송신 station byte 보존 후보는
+관측 PHY/BlockAck 샘플을 요구하며 source station bytes/downPHY로 중계
+직렬화 항만 대체한다. sole-source와 byte conservation 가정을 명시했다.
+교정 C0=339.726891Mb/s, 유효 상향706.187~961.7, 하향1175.864~1201.980Mb/s.
+대칭 O=2.350554us는 조건부 운용 비용이며 물리 독립 식별 결과가 아니다.
+
+held-out 자기 부하0.2/0.5/0.8 계산 가용성21.98/20.88/0%, clean 포화1.08%,
+B2 포화0%, C2 자기 부하25.81%/포화0%. 범위 이탈과 하향 샘플 부족을
+보존했고 검증 자료로 범위를 넓히거나 계수를 다시 맞추지 않았다.
+B2/C2 경쟁12→10은 실제 다른/같은AP 배치를 확인해 요청300Mb/s70초 실행.
+clean/B2/C2 포화 실제 payload298.952/182.815/205.552Mb/s.
+B2/C2 유효 추정0창이므로 예측 오차를 승인할 수 없다.
+DDS Static 고정 런타임은 Fast122/122, Cyclone실제83/83(계획122).
+Cyclone deadline으로39개 미시도, publish 최대5457.435ms; 오류/수신 손실 아님.
+DDS 계산 가용성42.22/8.51%. 9개 모두95% 입력 기준 미통과, validated=false.
+실제 HTB 자동제어는 실행하지 않았다. 60개 unittest 통과.
+
+상태 승계 절전on SSH 실패는 재현됐다. 새 연결 준비 무부하6회/부하3회,
+독립 UDP7개 종료 ping/SSH는 성공. 최종 절전on 복원 시IPv4/IPv6 SSH 실패가
+다시 발생했고 유선으로 절전off만 적용하자 SSH 복구; AX 새 연결+절전on 후
+IPv4/IPv6 모두 성공했다. 영구 원인 해결로 주장하지 않는다.
+최종4/5 절전on·CPUpowersave·버퍼212992·noqueue 복원, 임시50.1/50.2·monitor·
+프로세스·실험 inhibit 제거.12/10 SR2 복귀와 임시 AX 프로파일 제거 확인.
+기존 연구 DDS와 모듈 해시 일치, 네 장비 최종 감사 모두 통과.
+보고서: `W1 Sender-only PHY·접속·C2 재검증_261014.html`.
+
+#### 송신 호스트 RTPS 관측과 결측 대응 후보 (2026-10-14)
+
+추가 Wi-Fi 장치 없음에 따라 `rospacer/sender_protocol.py`를 새로 구현했다.
+일반 managed 송신 인터페이스의 DATA_FRAG와 자연 DDS ACKNACK/NACK_FRAG를
+읽는다. 사용자 정의 수신 통계 피드백/monitor/Receiver-assisted 입력은 사용하지
+않지만 자연 reader 피드백을 허용하는 입력 계약 변경이다. 원래 wireless-only
+beta/theta/PHY/aggregation 모델의 관측 충분성 해결로 취급하지 않는다.
+기존 Receiver-assisted와 무선 sender_radio.py는 유지했다.
+
+원자료 `runs/w1_20261014_sender_bounded`. Static XML·고정 DDS 런타임으로
+4→AX→5, 1MiB RELIABLE KEEP_ALL VOLATILE, 4/20Hz20초의9회 유한 시험.
+v1 개발1회, 사전 고정 v2 검증6회, v2 꼬리 문제 수정 후 사전 고정 v3 새2회다.
+전9회 발신 순번100% 관측·캡처drop0·scope error없음·거짓 완료확인0개.
+실제 라이브러리 closure해시 일치, 종료 Wi-Fi SSH9회 성공.
+수신 앱 순번은 종료 후에만 대조하며 온라인 입력으로 쓰지 않았다.
+
+Fast v2 mask79/80·load399/400 및 v3 새mask79/80·load399/400 누적 확인.
+실제 앱 수신은각80/80·400/400이고 마지막1개는미확정으로 유지했다.
+나머지실행은관측/확인/수신집합일치. 사전95%비율게이트와100%정확일치
+검사를별도로기록하며,확인비율만으로자동제어를승인하지않는다.
+v2 종료후꼬리때문의과도감소를원자료에보존했다. v3는단일마지막표본이
+ACKbase와같고missing/최근NACK가없으면보류한다. v3 mask입력가림구간
+감소23회,두v3시험종료후backoff0회. 꼬리를수신성공/혼잡없음으로승격하지
+않는다. 단일실제손실도보류될수있으므로완전한손실탐지보장이아니다.
+
+200ms shadow권고만생성, HTB는설치하지않았다. ACK lag는첫조각→ACK시간이며
+종단콜백지연아님; ACK창바이트율은확인진행률이며링크용량아님.
+이후보의B2/C2·동적경쟁·장기결측·liveHTB성능비교는이번에수행하지않았다.
+원래무선-only Sender-only 및자동제어승인은계속보류한다.
+
+74개unittest통과.4/5원래절전on·CPUpowersave·버퍼212992·noqueue복원,
+임시관리IP·실험프로세스·소유감시/억제기제거,연구DDS/모듈해시유지확인.
+12/10과AP설정은변경하지않았다.소스스냅샷/버전별freeze/pcap/CSV/해시보존.
+보고서: `W1 송신 측 프로토콜 관측·결측 대응_261014.html`.
+
+#### ACK 실제HTB·B2/C2 및 최소 수신PHY 보정 (2026-10-14)
+
+원자료 `runs/w1_20261014_ack_live`. 수신5에새통계프로그램을추가하지않는
+배치요구를유지했다.송신4의ACK관측기와유한HTB실험경로를구현하고4→AX→5,
+12→SR2→10 B2 /12→AX→10 C2,각DDS의Fixed대ACK를측정했다.
+1MiB RELIABLE KEEP_ALL VOLATILE,Static XML,30Hz30초900개요청,경쟁UDP300Mb/s
+요청90초.실제발행/경쟁률과수신을분리해기록한다.수신순번은사후참조만사용.
+
+초기Cyclone B2는1346B송신복합RTPS를320B로잘라뒤제어헤더를놓쳐확인0으로
+보류됐다.전체MTU를해석·제어원자료를보존하도록보강하고새B2재시험을수행했다.
+최종ACK B2 Fast345/345,Cyclone416/416;C2 Fast346/346,Cyclone238/238 확인/수신.
+최종4조건관측순번100%,거짓확인0,캡처drop0,scope error없음.초기실패는보존.
+경쟁미성립C2 Cyclone848/848는제어효과/성능비교에서제외했다.
+
+B2 두DDS와최종C2 Fast는상한변경0회. C2 Cyclone는116회변경했지만Fixed393개
+대ACK238개로발행량이줄었다.입력정확도와적응성능을동일시하지않는다.
+가림증명시험은91회실제변경·220/300개발행/220개수신으로부하감소를보존한다.
+단일쌍·실제경쟁률차이·무변경조건의처리량차이를정식개선율로인용하지않는다.
+
+대안`peer_phy.py`/`apply-peer-phy`는표준iw수신PHY1200.9Mb/s를교정파일로받고
+운용중수신통계daemon을요구하지않는다.원래모델의교정입력연결과범위gate를
+구현했다.첫source-only 패킷당중계비용후보는새clean 잔차-0.06~-0.09로실패했다.
+`minphy_radio.py` v2는송신TX시간·상/하향PHY비율·재시도및같은창의가중조화평균
+상향PHY를사용한다.원교정자료만으로계수를고정하고새3조건을독립검증했다.
+예산예측오차clean9.982%,B2 2.918%,C2 1.628%,각계산가능100%.원식의TX<=busy는
+강제하지않고현재MT7921의raw busy 자기TX제외계약을명시한다.
+
+clean 점유율잔차중앙0.103/p95절대값0.117로자기/다른트래픽분해는미완료다.
+잔차를물리beta_oth로확정하지않는다.유효중계/서비스비용은조건부운용계수이며
+PPDU airtime/intrinsic O 식별이아니다.용량예산gate와원래점유율gate를구분한다.
+
+`minphy_live.py`는해시일치·예산gate·명시적experimental flag가있는유한실험만
+허용한다.수신PHY는고정교정값,운용중입력은송신통계뿐이다.새C2 시운전에서
+Fast690/690,Cyclone850/850수신(각900개계획),계산305/315회,실제HTB187/197회
+변경,정상구간계산100%,fq drop0.최소보정의현재장비예비동작근거이며
+Receiver-assisted 대체성능·전체W1·원래무선-only 모델승인으로승격하지않는다.
+
+84개unittest통과.주소/권한/경쟁TCP시작/SSH실패를원자료에보존하고미성립조건을
+제외했다.4/5관리에는IPv6+임시유선,SR2관리에는기존IPv6 link-local을사용했다.
+최종네장비모든복원감사통과:4/5원래절전on·CPUpowersave·버퍼212992·noqueue,
+임시관리주소/실험프로세스/감시·억제기제거,12/10 SR2와원래버퍼복귀·임시AX
+프로파일제거.기존연구DDS와모듈해시유지.Receiver-assisted 기존경로는보존한다.
+보고서: `W1 ACK 기반 Sender-only B2·C2 검증_261014.html`.
+
+#### 2026-10-14 송신 측 단독 교정·제어 W1 통합
+
+`sender-calibrate`, `sender-validate`, `sender-govern`을 송신 패키지에 통합했다.
+4번에 /home/csilab/.local/bin/rospacer 설치, 계수 계산·RTT 측정·Static XML 생성·HTB
+제어 모두4번 실행이다. 수신에는 새 ROSPacer/통계 에이전트를 설치하지 않았으며 기존
+SSH/iw/iperf3만 교정에 사용한다. 수신의 제한된 교정 공개키는 유지하고 임시 측정 키는 제거했다.
+실험 하네스도4번에서 실행, 수신5번은 기존 traffic.py subscriber만 사용했다.
+
+최초242.509Mb/s 교정은B2 오차37.30%로 실패했다. 기본버퍼·수신 절전조건 자료를 보존했다.
+양쪽절전off/CPU performance, 커널버퍼상한4MiB, UDP소켓1MiB로 사전조건을 통일한 새
+교정348.909Mb/s와 실제RTT19.580ms로 계수를 고정했다. 새Clean/B2/C2 오차는
+13.6754%/2.2268%/5.0752%, 계산가능100%, 검증후재교정 없음. C2 두 실패는TCP
+제어연결에서 데이터 미시작; 리슨상태확인 보강 뒤 r1을 새로 수행해 기록했다. 같은
+수정모델의 하향=상향 입력도 세조건에서20%안이므로 수신PHY 필요성을 단정하지 않는다.
+원TX<=busy 식 전체의 조건부 도입 절차를 소급완료했다고 주장하지 않는다.
+
+C2 실제비교는15초/30Hz/계획450개, 두역순반복, Static/Fixed/Adaptive, 두DDS로12회다.
+모든실행 실제라이브러리 경로/해시 고정closure와일치. 발행한메시지는전부수신되었으나
+요청450개대비실제발행량을 보존한다. Cyclone Adaptive133/139, Fixed213/204,
+Static219/209개로 적응형처리량/지터우위가없었다. Fast는반복변동이크다.
+모든Adaptive 정상발행구간계산100%, 실제HTB124/140/122/122회변경, 모든HTB실행fqdrop0.
+예측게이트통과는DDS성능우위가아니다. W2 E/F/정식통계비교, 물리점유율분해는미완료다.
+
+실제SIGTERM과SIGKILL만료복원, 실패검증으로시작거부를확인했다.89개검사통과.
+네장비noqueue/버퍼212992/임시프로세스없음,4/5절전·CPU·연구DDS보존,
+12/10원래SR2프로파일복원모두true. 유선관리주소를추가하지않았다.
+원자료 runs/w1_20261014_sender_integrated, 신규HTML W1 송신 측 단독 교정·제어 통합 검증_261014.html.
+
+
+#### 2026-10-15 W2 케이스 격리 실패 정책
+
+사용자 지시에 따라 연속 운영 실패 3회 전체 중단을 제거했다. 각 케이스 최대 2회 시도 후 네 장비 환경 복구 확인 시 skipped_failed로 보존하고 다음 케이스로 진행한다. 정상 측정에 집계하지 않으며, 낮은 성능은 재시도하지 않는다. 프로세스·SSID/MAC·noqueue·커널 기준값·guard 생존 확인이 두 차례 정리 뒤에도 실패할 때만 공유 환경 보호 중단한다. 모든 시도의 case_isolation.json과 attempts.json을 보존한다.
+
+현재 시도 완료 후 안전 경계에서 복원·재준비하여 12:29 KST PID 41728로 재개했다. 정상 36건·범위 보류 6건을 유지한다. 새 guard session_policy 네 대 준비 완료, 실제 환경 감사 모두 통과. 실험 프로토콜·교정값·기존 원자료는 유지했다. 진입점 시뮬레이션에서 3개 케이스 연속 실패 후 다음 실행, 공통 환경 실패 시 복원·중단, 나쁜 성능 측정의 유지가 통과했다.
+
+12:32 KST 실측 확인: 새 정책의 첫 T1 F Fast DDS Adaptive r1은 1508/1508 수신, measured. 종료 후 네 장비 case_isolation 감사 모두 true, failure_policy_action=continue. 유효 측정 37건으로 증가했다. 전체 unittest 106개 통과.
+
+
+#### 2026-10-15 22:22 W2 3회 배치 종료
+
+finished_with_skipped_cases, pending=0. measured198(T1 E 원본33+새165), T3 Adaptive blocked_scope6, Cyclone Static−F4 XML ns0 기동 오류 skipped_failed3. 네 장비 guard 복원 모두 성공, noqueue·errors[] 확인, PC runner 종료. 새 최종 HTML W2 실험 최종 결과 보고서_261015.html 및 runs/w2_20261015_resume1/final_analysis_261015/analysis.json 생성. 결과 입력 해시·원자료 불변 검증. T1/F·P0 Static 개선 관측, Fixed/Adaptive Static 대비 종합 우위 없음. T3 지연108개 쌍 검증 미충족·기존 도착구간 처리량/Jain 제외. D3 지연 회복과 미수신·미회복을 분리 보고. 연구 전체/5회 반복/Drain Control 완료로 승격하지 않음.

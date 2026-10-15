@@ -6,11 +6,13 @@ import html
 import json
 import re
 import subprocess
+from w1_fq_explanation import fq_explanation
 
 ROOT=Path(__file__).resolve().parents[1]
 BASE=ROOT/'runs/w1_20261013_radio_input_retry'
 DEST=ROOT.parent/'html 파일 모음'
 NAME='W1 무선 입력 추가 검증_261013.html'
+SENDER_NAME='W1 송신 측 수동 관측 프로토타입_261013.html'
 E=html.escape
 
 
@@ -129,6 +131,7 @@ def main():
     s+=note('B2·C2·quiet·측정 구간의 정의','<p><b>B2</b>: 주 쌍4/5는 AX1500, 경쟁 쌍12/10은 별도 SR2 AP. 두 AP가149번/80MHz를 공유하며 경쟁 UDP를2초 켜고2초 끄는 패턴이다. <b>C2</b>: 네 단말 모두 SR2에서 경쟁 쌍이 약0.9C₀ UDP를 전송한다. 같은 AP 자원을 놓고 경쟁한다. <b>quiet</b>: 해당 토폴로지와 AP를 유지하고 경쟁 UDP만 끈 기준 상태다. 두 AP가 켜져 있어도 B2 경쟁 트래픽이 꺼질 수 있다.</p><p>주 iperf UDP1400B 포화 측정은30초다. 경쟁 source/sink와 통계 측정을 미리 예약하고 무선 부하 중 PC의 TCP 제어를 하지 않았다. 중앙 수신 interval3..27의 약23초 처리량과 대응하는 약24초 source 계수 창을 사용했다. 각 회차 client 성공·30초 지속·경쟁 실행·버퍼 복원을 검사했다. 두 구간의 길이를 같다고 가정한 총 byte 나눗셈은 하지 않는다.</p><p>초기 직접 제어 B2와 짧아진 C2, 시작 시계 오차/준비 실패 회차는 원자료로 보존하고 공식 오차 표에서는 제외했다. PC 시계가 단말보다 약124초 앞서 있어 예약 시각을 host별 오프셋으로 보정했다. 이 정렬은 장시간 radio 평균용이며 1ms 종단 지연 동기화 승인으로 쓰지 않는다. B2/C2에서 β가 양수인 것은 경쟁을 관측한 결과다. raw 파일의 <code>self_pass=false</code>는 경쟁 조건에서 자기 부하 전용 기준을 만족하지 않는다는 뜻이며, 20% 용량 예측 오차 실패와 다르다.</p>')
     s+='<p>'+raw('b2_aggregation_confirmation/summary.json')+' · '+raw('b2_aggregation_confirmation/aggregation_analysis.json')+' · '+raw('c2_scheduled/summary.json')+' · '+raw('c2_scheduled/aggregation_analysis.json')+'</p>'
     s+='<h2>7. 수정 adaptive의 실제 갱신과 결측 보류</h2>'
+    s+=fq_explanation()
     s+=table(['DDS','예정/발행/수신','갱신 횟수','갱신 간격 중앙값','피드백 중단 보류','qdisc 복원'],[[r['rmw'],f"{r['planned']}/{r['succeeded']}/{r['received']}",r['updated'],f"{r['median_update_interval_s']*1000:.2f} ms",r['stale_feedback_holds'],'확인' if r['qdisc_restored'] else '실패'] for r in smoke])
     s+=note('normal adaptive·fixed·diagnostic·gate·hold의 뜻','<p><b>Static</b>은 입력값으로 계산한 DDS 정적 XML이다. <b>fixed</b>는 Static에 HTB/fq 고정 상한을 붙인 조건이다. <b>adaptive_diagnostic</b>은10월12일 임시 가정을 사용한 별도 진단 경로이며 정식 검증 근거로 승격하지 않았다.</p><p>이번에는 <code>rospacer govern --mode adaptive</code>의 새 native 교정 입력 경로를 실행했다. 수신5번이 약200ms마다 통계와 RX PHY를 <b>유선50.1→50.2 UDP55910</b>으로 전달한다. DDS 데이터는 XML의 Wi-Fi interface 지정으로 무선4→AP→5에 보낸다. 상한은 최대0.9C₀=300.450Mb/s이고 관측 창은 약3초, 최소2초부터 계산한다.</p><p><b>gate</b>는 교정 및 장비 범위가 검증됐는지 확인하는 관문이다. kernel·module srcversion·reader SHA·AP MAC·149번/80MHz·1MiB 조건을 고정했다. 승인되지 않은 프로파일은 qdisc 설치 전에 거부하는 검사도 추가했다. 기존 입력 경로의 미승인 gate를 임의로 해제하지 않는다.</p><p><b>hold</b>는 입력이 부족할 때 마지막 유효 상한을 유지하고 새 계산을 하지 않는 동작이다. 처음2초의 warm-up, 자체 패킷이 없는 창, 수신 피드백이0.6초 이상 오래된 경우를 로그에 남긴다. 수신 피드백을33초 후 끊고 제어기는43초 유지해 각51회의 결측 보류를 확인했다. 손실된 입력을0으로 만들어 경쟁이 없다고 계산하지 않았다.</p><p>동작 중 상한 범위는 Fast122.935~300.450Mb/s, Cyclone64.478~300.450Mb/s였다. 이 변동은 입력·PHY·교정식·평활의 결과이며 DDS 성능 순위가 아니다. 이번 검사는 손상 없는0.2C₀ 부하의 기능 시운전이다. F 단계의 동적 경쟁 추종·adaptive 대비 fixed 성능 우위·배출 제어 전체를 검증한 시험으로 해석하지 않는다.</p>')
     s+='<p>'+raw('native_adaptive_smoke/summary.json')+' · '+raw('native_adaptive_smoke/qualified_input_profile.json')+' · '+raw('native_adaptive_smoke/fastdds/4/govern.csv','Fast 제어 CSV')+' · '+raw('native_adaptive_smoke/cyclonedds/4/govern.csv','Cyclone 제어 CSV')+'</p>'
@@ -147,6 +150,8 @@ def main():
         s=s.replace('Fast122.935~300.450Mb/s, Cyclone64.478~300.450Mb/s',' · '.join(ranges))
         s=s.replace('각51회의 결측 보류',f"Fast{smoke[0]['stale_feedback_holds']}회·Cyclone{smoke[1]['stale_feedback_holds']}회의 결측 보류")
     s=s.replace('자동 검사38개','자동 검사39개')
+    if (out/SENDER_NAME).exists():
+        s+='<p id="sender-prototype-reference"><a href="'+SENDER_NAME+'">별도 Sender-only 프로토타입 개발 진단</a>: 무경쟁 DDS 추정 확인, B2 가시성 부족으로 보류. 본 Receiver-assisted 검증과 구분한다.</p>'
     s+='</main></body></html>';(out/NAME).write_text(s,encoding='utf8')
     path=DEST/'W1 보고서.html';original=path.read_text(encoding='utf8');backup=BASE/'W1_report_before_radio_addendum.html'
     if not backup.exists():backup.write_text(original,encoding='utf8')
@@ -175,6 +180,9 @@ def main():
         updates=f"{smoke[0]['updated']}/{smoke[1]['updated']}"
         original=original.replace('갱신106/121회',f'갱신{updates}회').replace('갱신106/121회',f'갱신{updates}회')
         original=original.replace('각51회 피드백 결측 보류',f"Fast{smoke[0]['stale_feedback_holds']}회·Cyclone{smoke[1]['stale_feedback_holds']}회 피드백 결측 보류")
+    original=original.replace('<h2 id="section-9">W1 전용 역압 실험</h2>', '<h2 id="section-9">W1 전용 역압 실험</h2>'+fq_explanation(),1)
+    if (out/SENDER_NAME).exists():
+        original=original.replace('<h2 id="radio-20261013">10월13일 무선 입력 재검증</h2>','<h2 id="radio-20261013">10월13일 무선 입력 재검증</h2><p id="sender-prototype-reference"><a href="결과/W1 실험결과/'+SENDER_NAME+'">별도 Sender-only 프로토타입 개발 진단</a>: 무경쟁 DDS 추정 확인, B2 가시성 부족으로 보류. 기존 Receiver-assisted 판정을 대체하지 않는다.</p>',1)
     path.write_text(original,encoding='utf8')
     # Rebase file links when copying the entry report three levels deeper.
     def rebase(m):

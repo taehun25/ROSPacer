@@ -199,6 +199,9 @@ def govern(cfg, mode, seconds, trace, dry_run=False):
         raise ValueError("finite positive duration required")
     if not isinstance(cfg.get("cap_packet_Bps"), (int, float)) or cfg["cap_packet_Bps"] <= 0:
         raise ValueError("govern requires a measured plan with a positive cap; golden is uncalibrated")
+    if mode == 'adaptive-sender':
+        from .sender_radio import govern as sender_govern
+        return sender_govern(cfg,seconds,trace,dry_run)
     if mode == 'adaptive' and cfg.get('native_radio_calibration') is not None:
         from .native_radio import govern as native_govern
         return native_govern(cfg,seconds,trace,dry_run)

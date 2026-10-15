@@ -1,0 +1,40 @@
+{
+  "state": "finished_with_skipped_cases",
+  "updated_UTC": "2026-10-15T13:22:32Z",
+  "pid": 41728,
+  "active": null,
+  "finished": 207,
+  "valid_measured": 198,
+  "blocked_scope": 6,
+  "skipped_failed": 3,
+  "pending": 0,
+  "estimated_remaining_hours": 0.0,
+  "failures": 0,
+  "total": 207,
+  "restoration": {
+    "12": {
+      "restored": true,
+      "errors": [],
+      "qdisc": "[{\"kind\":\"noqueue\",\"handle\":\"0:\",\"root\":true,\"refcnt\":2,\"options\":{}}]",
+      "wall": 1792070420.0025177
+    },
+    "10": {
+      "restored": true,
+      "errors": [],
+      "qdisc": "[{\"kind\":\"noqueue\",\"handle\":\"0:\",\"root\":true,\"refcnt\":2,\"options\":{}}]",
+      "wall": 1792070405.1886938
+    },
+    "4": {
+      "restored": true,
+      "errors": [],
+      "qdisc": "[{\"kind\":\"noqueue\",\"handle\":\"0:\",\"root\":true,\"refcnt\":2,\"options\":{}}]",
+      "wall": 1792070403.9121249
+    },
+    "5": {
+      "restored": true,
+      "errors": [],
+      "qdisc": "[{\"kind\":\"noqueue\",\"handle\":\"0:\",\"root\":true,\"refcnt\":2,\"options\":{}}]",
+      "wall": 1792070405.4610364
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "passed": true,
+  "max_attempts_per_case_per_invocation": 2,
+  "case_failure": "retain all attempts, mark skipped_failed, continue if environment audit passes",
+  "shared_environment_failure": "two bounded cleanup/audit rounds, then halt and restore",
+  "performance": "low delivery or throughput is a valid measurement; do not retry",
+  "terminal_statuses": [
+    "measured",
+    "blocked_scope",
+    "skipped_failed"
+  ],
+  "preflight_evidence": "trials/policy_preflight/case_isolation.json",
+  "previous_case_finished": "T1_F_fastdds_vendor_fc_r1",
+  "retained_measured": 36,
+  "wall": 1792034924.0680554
+}

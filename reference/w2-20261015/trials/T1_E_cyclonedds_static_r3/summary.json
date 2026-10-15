@@ -1,0 +1,148 @@
+{
+  "id": "T1_E_cyclonedds_static_r3",
+  "status": "measured",
+  "row": {
+    "id": "T1_E_cyclonedds_static_r3",
+    "stage": "T1_E",
+    "topology": "T1",
+    "condition": "E",
+    "rho": 1.5,
+    "mode": "static",
+    "rmw": "cyclonedds",
+    "rep": 3,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete"
+  },
+  "cfg": {
+    "payload_bytes": 1048576,
+    "publish_hz": 65.9375791874685,
+    "readers": 1,
+    "capacity_Bps": 46093708.68938598,
+    "load_Bps": 69140563.03407897,
+    "rho": 1.5,
+    "alpha": 0.9,
+    "cap_application_Bps": 41484337.820447385,
+    "packet_factor": 1.0653409090909092,
+    "cap_packet_Bps": 44194962.1666698,
+    "unit_bytes": 1472,
+    "header_bytes": 64,
+    "feedback_s": 0.007582929281926466,
+    "rtt_s": 0.019538,
+    "recovery_s": 1,
+    "cache_lower_bytes": 2298680.2137065567,
+    "cache_upper_bytes": -27656225.213631585,
+    "feasible_recovery": false,
+    "cache_samples": 2,
+    "cache_bytes": 2097152,
+    "socket_tx_bytes": 184375,
+    "socket_rx_bytes": 2768567,
+    "fq_flow_limit": 1490,
+    "fq_limit": 5960,
+    "burst_bytes": 1500,
+    "mtu": 1500,
+    "intent": "complete",
+    "qualifications": [
+      "RTPS header is an explicit provisional input; verify by packet capture.",
+      "Cache limits do not prove publish() backpressure or complete delivery.",
+      "Cyclone WHC watermark is a throttling threshold, not a strict byte cap.",
+      "Recovery bound needs measured C, valid pacing and stable offered load."
+    ]
+  },
+  "clock": {
+    "validated": true,
+    "target_ms": 0.2,
+    "exclusion_ms": 1.0,
+    "scope": "relative laptop4-to-laptop5 time; not UTC accuracy",
+    "method": "abs(system correction) + root delay/2 + root dispersion",
+    "errors": [],
+    "relative_error_bound_ms": 0.064565,
+    "target_met": true
+  },
+  "metrics": {
+    "requested": 3957,
+    "attempted": 1934,
+    "publish_succeeded": 1934,
+    "publish_failed": 0,
+    "unique_received": 1934,
+    "delivery_requested": 0.4887541066464493,
+    "delivery_successful_publish": 1.0,
+    "duplicate_arrivals": 0,
+    "requested_hz": 65.9375791874685,
+    "actual_publish_hz": 32.22359275037527,
+    "publish_duration_ms": {
+      "mean": 30.815333977249225,
+      "p50": 27.8128885,
+      "p95": 50.712192449999996,
+      "p99": 59.861653910000015,
+      "maximum": 77.663703
+    },
+    "arrival_interval_ms": {
+      "mean": 31.02987794568029,
+      "stdev": 8.82073163339169,
+      "p95": 46.811994999999996,
+      "p99": 56.657265200000005
+    },
+    "arrival_jitter_ms": {
+      "p50": 14.101853436147067,
+      "p95": 31.646136436147064,
+      "p99": 41.491406636147076,
+      "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+    },
+    "arrival_interval_goodput_Bps": 33792462.92349576,
+    "end_to_end_latency_ms": {
+      "p50": 38.926583,
+      "p95": 64.18515864999996,
+      "p99": 76.93983364000003,
+      "minimum": 28.457511,
+      "maximum": 102.314396,
+      "samples": 1934,
+      "clock_error_bound_ms": 0.064565,
+      "definition": "payload timestamp before publish to receiver callback; includes serialization/queueing"
+    },
+    "successful_publish_per_target_second": 32.233333333333334,
+    "clock_validated": true,
+    "publisher_exit_reason": "deadline",
+    "subscriber_exit_reason": "deadline",
+    "notes": [
+      "Successful-publish delivery alone can hide offered-load reduction.",
+      "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+      "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+      "No E2E latency is computed without verified clock synchronisation.",
+      "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+    ]
+  },
+  "libraries": {
+    "4": {
+      "valid": true,
+      "actual": {
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/cyclonedds/libddsc.so.0": "7bcc3cf48f65b931d9b59a250e81ee523429475d4288f40d94a95b3d22b8e7b7",
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/cyclonedds/librmw_cyclonedds_cpp.so": "4c018cee55875cf1e955990c7e3a1cbe1c319d0d80a93126aa7b8913b6fc369e"
+      }
+    },
+    "5": {
+      "valid": true,
+      "actual": {
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/cyclonedds/libddsc.so.0": "7bcc3cf48f65b931d9b59a250e81ee523429475d4288f40d94a95b3d22b8e7b7",
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/cyclonedds/librmw_cyclonedds_cpp.so": "4c018cee55875cf1e955990c7e3a1cbe1c319d0d80a93126aa7b8913b6fc369e"
+      }
+    }
+  },
+  "published": 1934,
+  "received": 1934,
+  "goodput_Mbps": 270.3397033879661,
+  "p99_ms": 76.93983364000003,
+  "jitter_p99_ms": 41.491406636147076,
+  "reason": "",
+  "qdisc_restored": true,
+  "C0_Mbps": 368.7496695150878,
+  "requested_hz": 65.9375791874685,
+  "normal_period_goodput_Mbps": 270.2529877333333,
+  "actual_start_offset_s": 0.02116227149963379,
+  "orchestration_elapsed_s": 178.43800000008196,
+  "source_artifacts_root": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_E_cyclonedds_static_r3",
+  "inherited_from": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep",
+  "backup_note": "Compact archived summary. Original sequence arrays are in results.json; full raw artifacts remain in local ignored runs/. source_artifacts_root is historical provenance, not a portable path."
+}

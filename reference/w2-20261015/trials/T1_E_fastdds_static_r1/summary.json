@@ -1,0 +1,152 @@
+{
+  "id": "T1_E_fastdds_static_r1",
+  "status": "measured",
+  "row": {
+    "id": "T1_E_fastdds_static_r1",
+    "stage": "T1_E",
+    "topology": "T1",
+    "condition": "E",
+    "rho": 1.5,
+    "mode": "static",
+    "rmw": "fastdds",
+    "rep": 1,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete"
+  },
+  "cfg": {
+    "payload_bytes": 1048576,
+    "publish_hz": 65.9375791874685,
+    "readers": 1,
+    "capacity_Bps": 46093708.68938598,
+    "load_Bps": 69140563.03407897,
+    "rho": 1.5,
+    "alpha": 0.9,
+    "cap_application_Bps": 41484337.820447385,
+    "packet_factor": 1.0653409090909092,
+    "cap_packet_Bps": 44194962.1666698,
+    "unit_bytes": 1472,
+    "header_bytes": 64,
+    "feedback_s": 0.007582929281926466,
+    "rtt_s": 0.019538,
+    "recovery_s": 1,
+    "cache_lower_bytes": 2298680.2137065567,
+    "cache_upper_bytes": -27656225.213631585,
+    "feasible_recovery": false,
+    "cache_samples": 2,
+    "cache_bytes": 2097152,
+    "socket_tx_bytes": 184375,
+    "socket_rx_bytes": 2768567,
+    "fq_flow_limit": 1490,
+    "fq_limit": 5960,
+    "burst_bytes": 1500,
+    "mtu": 1500,
+    "intent": "complete",
+    "qualifications": [
+      "RTPS header is an explicit provisional input; verify by packet capture.",
+      "Cache limits do not prove publish() backpressure or complete delivery.",
+      "Cyclone WHC watermark is a throttling threshold, not a strict byte cap.",
+      "Recovery bound needs measured C, valid pacing and stable offered load."
+    ]
+  },
+  "clock": {
+    "validated": true,
+    "target_ms": 0.2,
+    "exclusion_ms": 1.0,
+    "scope": "relative laptop4-to-laptop5 time; not UTC accuracy",
+    "method": "abs(system correction) + root delay/2 + root dispersion",
+    "errors": [],
+    "relative_error_bound_ms": 0.0662445,
+    "target_met": true
+  },
+  "metrics": {
+    "requested": 3957,
+    "attempted": 1656,
+    "publish_succeeded": 1639,
+    "publish_failed": 17,
+    "unique_received": 1639,
+    "delivery_requested": 0.4142026787970685,
+    "delivery_successful_publish": 1.0,
+    "duplicate_arrivals": 0,
+    "requested_hz": 65.9375791874685,
+    "actual_publish_hz": 27.317663840468807,
+    "publish_duration_ms": {
+      "mean": 36.0199667089372,
+      "p50": 35.652756999999994,
+      "p95": 51.8636695,
+      "p99": 60.11182135000001,
+      "maximum": 75.04575
+    },
+    "arrival_interval_ms": {
+      "mean": 36.61746302991453,
+      "stdev": 9.813130249555186,
+      "p95": 53.577537899999996,
+      "p99": 61.584471859999965
+    },
+    "arrival_jitter_ms": {
+      "p50": 20.920946936147068,
+      "p95": 38.41167933614706,
+      "p99": 46.41861329614703,
+      "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+    },
+    "arrival_interval_goodput_Bps": 28635954.35717021,
+    "end_to_end_latency_ms": {
+      "p50": 47.418136,
+      "p95": 67.166196,
+      "p99": 78.62670334,
+      "minimum": 28.571934,
+      "maximum": 98.104419,
+      "samples": 1639,
+      "clock_error_bound_ms": 0.0662445,
+      "definition": "payload timestamp before publish to receiver callback; includes serialization/queueing"
+    },
+    "successful_publish_per_target_second": 27.316666666666666,
+    "clock_validated": true,
+    "publisher_exit_reason": "deadline_with_publish_errors",
+    "subscriber_exit_reason": "deadline",
+    "notes": [
+      "Successful-publish delivery alone can hide offered-load reduction.",
+      "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+      "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+      "No E2E latency is computed without verified clock synchronisation.",
+      "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+    ]
+  },
+  "libraries": {
+    "4": {
+      "valid": true,
+      "actual": {
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/fastdds/libfastcdr.so.1": "caea193a51d5ee9b61e15e206ba47d7972ee86fa51d9c74d3d7a3da57c0c7182",
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/fastdds/libfastrtps.so.2.6": "cc1f45ce53ef4ed2961e57054ddb80d115dafc6604d2a6c259ec8b18452e03b8",
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/fastdds/librmw_fastrtps_cpp.so": "a44233f0485f9229e2ed9f967ad668e5730fc25bcb7e3f402a7840dc253dff11",
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/fastdds/librmw_fastrtps_shared_cpp.so": "3ef725d639a97c77a9a352a7d108131b235b0579659bdffefd4ffd370534dbc3"
+      }
+    },
+    "5": {
+      "valid": true,
+      "actual": {
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/fastdds/libfastcdr.so.1": "caea193a51d5ee9b61e15e206ba47d7972ee86fa51d9c74d3d7a3da57c0c7182",
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/fastdds/libfastrtps.so.2.6": "cc1f45ce53ef4ed2961e57054ddb80d115dafc6604d2a6c259ec8b18452e03b8",
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/fastdds/librmw_fastrtps_cpp.so": "a44233f0485f9229e2ed9f967ad668e5730fc25bcb7e3f402a7840dc253dff11",
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/fastdds/librmw_fastrtps_shared_cpp.so": "3ef725d639a97c77a9a352a7d108131b235b0579659bdffefd4ffd370534dbc3"
+      }
+    }
+  },
+  "published": 1639,
+  "received": 1639,
+  "goodput_Mbps": 229.08763485736168,
+  "p99_ms": 78.62670334,
+  "jitter_p99_ms": 46.41861329614703,
+  "reason": "",
+  "qdisc_restored": true,
+  "C0_Mbps": 368.7496695150878,
+  "requested_hz": 65.9375791874685,
+  "normal_period_goodput_Mbps": 229.0089984,
+  "actual_start_offset_s": 0.032742977142333984,
+  "orchestration_elapsed_s": 178.0779999999795,
+  "source_artifacts_root": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T1_E_fastdds_static_r1",
+  "inherited_from": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep",
+  "backup_note": "Compact archived summary. Original sequence arrays are in results.json; full raw artifacts remain in local ignored runs/. source_artifacts_root is historical provenance, not a portable path."
+}

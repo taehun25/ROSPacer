@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "ap": "iptime5GAX1500",
+      "elapsed_s": 47.67200000002049,
+      "verified": true
+    },
+    {
+      "ap": "iptime5GAX1500SR2",
+      "elapsed_s": 20.780999999959022,
+      "verified": true
+    },
+    {
+      "ap": "iptime5GAX1500",
+      "elapsed_s": 26.344000000040978,
+      "verified": true
+    }
+  ],
+  "old_attempts_preserved": true
+}

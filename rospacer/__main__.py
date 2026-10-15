@@ -19,6 +19,8 @@ def main():
     parser = argparse.ArgumentParser(description="ROSPacer prototype: static profiles and sender HTB/fq")
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="command", required=True)
+    from .sender_minphy import add_commands
+    add_commands(sub)
     plan = sub.add_parser("plan")
     plan.add_argument("--rmw", choices=("fastdds", "cyclonedds"), required=True)
     for arg, default in (("payload", "1MiB"), ("share", None), ("rtt", "4ms"),
@@ -49,16 +51,24 @@ def main():
     validate.add_argument("--schema", required=True)
     gov = sub.add_parser("govern")
     gov.add_argument("--config", required=True)
-    gov.add_argument("--mode", choices=("fixed", "adaptive"), default="fixed")
+    gov.add_argument("--mode", choices=("fixed", "adaptive", "adaptive-sender"), default="fixed")
     gov.add_argument("--seconds", type=float, default=10)
     gov.add_argument("--trace", default="govern.csv")
     gov.add_argument("--dry-run", action="store_true")
+    sender=sub.add_parser('sender-observe',help='sender-only shadow estimate; no HTB changes')
+    sender.add_argument('--config',required=True)
+    sender.add_argument('--seconds',type=float,default=30)
+    sender.add_argument('--trace',required=True)
     cal = sub.add_parser("calibrate")
     cal.add_argument("--config", required=True)
     cal.add_argument("--tx-rate", required=True)
     cal.add_argument("--rx-rate", required=True)
     cal.add_argument("--retries", type=float, required=True)
     cal.add_argument("--relay-in-survey", choices=("yes", "no"), required=True)
+    peer=sub.add_parser('apply-peer-phy',help='attach offline receiver PHY correction; no receiver daemon or system change')
+    peer.add_argument('--config',required=True)
+    peer.add_argument('--calibration',required=True)
+    peer.add_argument('--out',required=True)
     restore_cmd = sub.add_parser("restore")
     restore_cmd.add_argument("--dev", required=True)
     analyze = sub.add_parser("analyze", help="paired smoke logs; no cross-host latency")
@@ -66,7 +76,10 @@ def main():
     analyze.add_argument("--subscriber", required=True)
     analyze.add_argument("--out", required=True)
     args = parser.parse_args()
-    if args.command in ("plan", "golden"):
+    if args.command in ('sender-calibrate', 'sender-validate', 'sender-govern'):
+        from .sender_minphy import dispatch
+        dispatch(args)
+    elif args.command in ("plan", "golden"):
         for address in (args.address, *args.peer):
             if ipaddress.ip_address(address).version != 4:
                 raise ValueError("IPv4 required in prototype")
@@ -110,6 +123,13 @@ def main():
                 time.sleep(.2)
         json_write(args.out, obj)
         print(f"Saved read-only observations: {args.out}")
+    elif args.command == 'apply-peer-phy':
+        from .peer_phy import attach
+        out=Path(args.out)
+        if out.exists():raise ValueError('preserve existing output; choose a new candidate config')
+        cfg=attach(json.loads(Path(args.config).read_text()),json.loads(Path(args.calibration).read_text()))
+        json_write(out,cfg)
+        print('Offline receiver PHY attached; no system changed; survey/model validation remains required')
     elif args.command == "calibrate":
         cfg = json.loads(Path(args.config).read_text())
         cfg["airtime_overhead_s"] = identify_overhead(cfg["capacity_Bps"],
@@ -122,6 +142,10 @@ def main():
         from .linux import govern
         cfg = json.loads(Path(args.config).read_text())
         print(json.dumps(govern(cfg, args.mode, args.seconds, args.trace, args.dry_run)))
+    elif args.command == 'sender-observe':
+        from .sender_radio import govern
+        cfg=json.loads(Path(args.config).read_text())
+        print(json.dumps(govern(cfg,args.seconds,args.trace,shadow=True)))
     elif args.command == "restore":
         from .linux import restore
         if not re.fullmatch(r"[A-Za-z0-9_.:-]+", args.dev):

@@ -1,0 +1,26 @@
+{
+  "id": "T3_E_fastdds_adaptive_r2",
+  "status": "blocked_scope",
+  "reason": "T3 Adaptive blocked: independent budget error exceeds20% on sender4",
+  "row": {
+    "id": "T3_E_fastdds_adaptive_r2",
+    "stage": "T3_E",
+    "topology": "T3",
+    "condition": "E",
+    "rho": 1.5,
+    "mode": "adaptive",
+    "rmw": "fastdds",
+    "rep": 2,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete"
+  },
+  "orchestration_elapsed_s": 1.046000000089407,
+  "source_artifacts_root": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep\\trials\\T3_E_fastdds_adaptive_r2",
+  "inherited_from": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261014_3rep",
+  "original_recorded_status": "failed",
+  "classification_correction": "shared ScopeError module identity fixed; independent budget gate unchanged",
+  "backup_note": "Compact archived summary. Original sequence arrays are in results.json; full raw artifacts remain in local ignored runs/. source_artifacts_root is historical provenance, not a portable path."
+}

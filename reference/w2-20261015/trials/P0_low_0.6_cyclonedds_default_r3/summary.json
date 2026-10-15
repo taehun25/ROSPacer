@@ -1,0 +1,168 @@
+{
+  "id": "P0_low_0.6_cyclonedds_default_r3",
+  "status": "measured",
+  "row": {
+    "id": "P0_low_0.6_cyclonedds_default_r3",
+    "stage": "P0_low_0.6",
+    "topology": "T1",
+    "condition": "E",
+    "rho": 0.6,
+    "mode": "default",
+    "rmw": "cyclonedds",
+    "rep": 3,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete"
+  },
+  "cfg": {
+    "payload_bytes": 1048576,
+    "publish_hz": 26.3750316749874,
+    "readers": 1,
+    "capacity_Bps": 46093708.68938598,
+    "load_Bps": 27656225.21363159,
+    "rho": 0.6,
+    "alpha": 0.9,
+    "cap_application_Bps": 41484337.820447385,
+    "packet_factor": 1.0653409090909092,
+    "cap_packet_Bps": 44194962.1666698,
+    "unit_bytes": 1472,
+    "header_bytes": 64,
+    "feedback_s": 0.018957323204816166,
+    "rtt_s": 0.019538,
+    "recovery_s": 1,
+    "cache_lower_bytes": 2822968.2137065567,
+    "cache_upper_bytes": 13828112.606815796,
+    "feasible_recovery": true,
+    "cache_samples": 13,
+    "cache_bytes": 13631488,
+    "socket_tx_bytes": 184375,
+    "socket_rx_bytes": 1846693,
+    "fq_flow_limit": 1490,
+    "fq_limit": 5960,
+    "burst_bytes": 1500,
+    "mtu": 1500,
+    "intent": "complete",
+    "qualifications": [
+      "RTPS header is an explicit provisional input; verify by packet capture.",
+      "Cache limits do not prove publish() backpressure or complete delivery.",
+      "Cyclone WHC watermark is a throttling threshold, not a strict byte cap.",
+      "Recovery bound needs measured C, valid pacing and stable offered load."
+    ]
+  },
+  "clock": {
+    "validated": true,
+    "target_ms": 0.2,
+    "exclusion_ms": 1.0,
+    "scope": "relative laptop4-to-laptop5 time; not UTC accuracy",
+    "method": "abs(system correction) + root delay/2 + root dispersion",
+    "errors": [],
+    "relative_error_bound_ms": 0.08707899999999999,
+    "target_met": true
+  },
+  "metrics": {
+    "requested": 1583,
+    "attempted": 1385,
+    "publish_succeeded": 1385,
+    "publish_failed": 0,
+    "unique_received": 1385,
+    "delivery_requested": 0.8749210360075805,
+    "delivery_successful_publish": 1.0,
+    "duplicate_arrivals": 0,
+    "requested_hz": 26.3750316749874,
+    "actual_publish_hz": 23.07443156438859,
+    "publish_duration_ms": {
+      "mean": 43.04639228231047,
+      "p50": 40.671565,
+      "p95": 62.7529264,
+      "p99": 77.23641268000011,
+      "maximum": 99.606517
+    },
+    "arrival_interval_ms": {
+      "mean": 43.33160798988439,
+      "stdev": 8.650006421169447,
+      "p95": 61.430711849999994,
+      "p99": 79.13495487000006
+    },
+    "arrival_jitter_ms": {
+      "p50": 2.528344590367677,
+      "p95": 23.51606544036767,
+      "p99": 41.22030846036773,
+      "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+    },
+    "arrival_interval_goodput_Bps": 24198871.18532011,
+    "end_to_end_latency_ms": {
+      "p50": 48.389091,
+      "p95": 79.2490586,
+      "p99": 97.22269504,
+      "minimum": 33.974002,
+      "maximum": 110.906396,
+      "samples": 1385,
+      "clock_error_bound_ms": 0.08707899999999999,
+      "definition": "payload timestamp before publish to receiver callback; includes serialization/queueing"
+    },
+    "successful_publish_per_target_second": 23.083333333333332,
+    "clock_validated": true,
+    "publisher_exit_reason": "deadline",
+    "subscriber_exit_reason": "deadline",
+    "notes": [
+      "Successful-publish delivery alone can hide offered-load reduction.",
+      "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+      "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+      "No E2E latency is computed without verified clock synchronisation.",
+      "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+    ]
+  },
+  "libraries": {
+    "4": {
+      "valid": true,
+      "actual": {
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/cyclonedds/libddsc.so.0": "7bcc3cf48f65b931d9b59a250e81ee523429475d4288f40d94a95b3d22b8e7b7",
+        "/home/csilab/ros2_ws/src/large_data_1009/ROSPacer/runtime_w1_45/cyclonedds/librmw_cyclonedds_cpp.so": "4c018cee55875cf1e955990c7e3a1cbe1c319d0d80a93126aa7b8913b6fc369e"
+      }
+    },
+    "5": {
+      "valid": true,
+      "actual": {
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/cyclonedds/libddsc.so.0": "7bcc3cf48f65b931d9b59a250e81ee523429475d4288f40d94a95b3d22b8e7b7",
+        "/home/csi/ros2_ws/src/large_data_1009/ROSPacer/runtime_w2/cyclonedds/librmw_cyclonedds_cpp.so": "4c018cee55875cf1e955990c7e3a1cbe1c319d0d80a93126aa7b8913b6fc369e"
+      }
+    }
+  },
+  "published": 1385,
+  "received": 1385,
+  "goodput_Mbps": 193.59096948256087,
+  "p99_ms": 97.22269504,
+  "jitter_p99_ms": 41.22030846036773,
+  "reason": "",
+  "qdisc_restored": true,
+  "C0_Mbps": 368.7496695150878,
+  "requested_hz": 26.3750316749874,
+  "normal_period_goodput_Mbps": 193.49722453333334,
+  "actual_start_offset_s": 0.002738475799560547,
+  "case_isolation_passed": true,
+  "failure_policy_action": "continue",
+  "artifact_id": "P0_low_0.6_cyclonedds_default_r3__a001",
+  "source_artifacts_root": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261015_resume1\\trials\\P0_low_0.6_cyclonedds_default_r3__a001",
+  "executed_row": {
+    "id": "P0_low_0.6_cyclonedds_default_r3__a001",
+    "stage": "P0_low_0.6",
+    "topology": "T1",
+    "condition": "E",
+    "rho": 0.6,
+    "mode": "default",
+    "rmw": "cyclonedds",
+    "rep": 3,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete",
+    "planned_id": "P0_low_0.6_cyclonedds_default_r3",
+    "attempt_number": 1
+  },
+  "attempt_number": 1,
+  "orchestration_elapsed_s": 197.25,
+  "backup_note": "Compact archived summary. Original sequence arrays are in results.json; full raw artifacts remain in local ignored runs/. source_artifacts_root is historical provenance, not a portable path."
+}

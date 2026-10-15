@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rospacer"
-version = "0.1.0"
+version = "1.0.0"
 description = "Research prototype for ROS 2 wireless DDS pacing"
 readme = "README.md"
 requires-python = ">=3.10"

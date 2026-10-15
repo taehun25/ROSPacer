@@ -1,0 +1,312 @@
+{
+  "id": "T3_E_fastdds_fixed_r1",
+  "status": "measured",
+  "row": {
+    "id": "T3_E_fastdds_fixed_r1",
+    "stage": "T3_E",
+    "topology": "T3",
+    "condition": "E",
+    "rho": 1.5,
+    "mode": "fixed",
+    "rmw": "fastdds",
+    "rep": 1,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete"
+  },
+  "topology_roles": {
+    "publishers": [
+      "4",
+      "5"
+    ],
+    "receivers": [
+      "12",
+      "10"
+    ]
+  },
+  "role_reason": "both MT7921 devices publish so W1 counter semantics apply; Intel/Realtek endpoints receive",
+  "pairs": [
+    {
+      "sender": "4",
+      "receiver": "12",
+      "clock": {
+        "validated": false,
+        "relative_error_bound_ms": 9.1871855,
+        "errors": [],
+        "method": "chrony system correction + root delay/2 + dispersion; selected local reference"
+      },
+      "metrics": {
+        "requested": 914,
+        "attempted": 80,
+        "publish_succeeded": 77,
+        "publish_failed": 3,
+        "unique_received": 77,
+        "delivery_requested": 0.08424507658643327,
+        "delivery_successful_publish": 1.0,
+        "duplicate_arrivals": 0,
+        "requested_hz": 15.224520371132671,
+        "actual_publish_hz": 1.26909471059647,
+        "publish_duration_ms": {
+          "mean": 758.467632425,
+          "p50": 854.529676,
+          "p95": 1111.0509447,
+          "p99": 1183.8526975599998,
+          "maximum": 1190.217677
+        },
+        "arrival_interval_ms": {
+          "mean": 795.9469886710526,
+          "stdev": 315.93182742418236,
+          "p95": 1205.7694765,
+          "p99": 1299.54540125
+        },
+        "arrival_jitter_ms": {
+          "p50": 818.8931622990464,
+          "p95": 1140.0859622990465,
+          "p99": 1233.8618870490463,
+          "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+        },
+        "arrival_interval_goodput_Bps": 1317394.26736289,
+        "end_to_end_latency_ms": null,
+        "successful_publish_per_target_second": 1.2833333333333334,
+        "clock_validated": false,
+        "publisher_exit_reason": "deadline_with_publish_errors",
+        "subscriber_exit_reason": "deadline",
+        "notes": [
+          "Successful-publish delivery alone can hide offered-load reduction.",
+          "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+          "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+          "No E2E latency is computed without verified clock synchronisation.",
+          "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+        ]
+      }
+    },
+    {
+      "sender": "4",
+      "receiver": "10",
+      "clock": {
+        "validated": false,
+        "relative_error_bound_ms": 10.7834665,
+        "errors": [],
+        "method": "chrony system correction + root delay/2 + dispersion; selected local reference"
+      },
+      "metrics": {
+        "requested": 914,
+        "attempted": 80,
+        "publish_succeeded": 77,
+        "publish_failed": 3,
+        "unique_received": 77,
+        "delivery_requested": 0.08424507658643327,
+        "delivery_successful_publish": 1.0,
+        "duplicate_arrivals": 0,
+        "requested_hz": 15.224520371132671,
+        "actual_publish_hz": 1.26909471059647,
+        "publish_duration_ms": {
+          "mean": 758.467632425,
+          "p50": 854.529676,
+          "p95": 1111.0509447,
+          "p99": 1183.8526975599998,
+          "maximum": 1190.217677
+        },
+        "arrival_interval_ms": {
+          "mean": 805.7952682105263,
+          "stdev": 317.78387125737896,
+          "p95": 1195.19968175,
+          "p99": 1244.54693475
+        },
+        "arrival_jitter_ms": {
+          "p50": 809.3556742990464,
+          "p95": 1129.5161675490465,
+          "p99": 1178.8634205490464,
+          "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+        },
+        "arrival_interval_goodput_Bps": 1301293.3202358338,
+        "end_to_end_latency_ms": null,
+        "successful_publish_per_target_second": 1.2833333333333334,
+        "clock_validated": false,
+        "publisher_exit_reason": "deadline_with_publish_errors",
+        "subscriber_exit_reason": "deadline",
+        "notes": [
+          "Successful-publish delivery alone can hide offered-load reduction.",
+          "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+          "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+          "No E2E latency is computed without verified clock synchronisation.",
+          "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+        ]
+      }
+    },
+    {
+      "sender": "5",
+      "receiver": "12",
+      "clock": {
+        "validated": false,
+        "relative_error_bound_ms": 9.076144,
+        "errors": [],
+        "method": "chrony system correction + root delay/2 + dispersion; selected local reference"
+      },
+      "metrics": {
+        "requested": 1043,
+        "attempted": 95,
+        "publish_succeeded": 93,
+        "publish_failed": 2,
+        "unique_received": 93,
+        "delivery_requested": 0.08916586768935762,
+        "delivery_successful_publish": 1.0,
+        "duplicate_arrivals": 0,
+        "requested_hz": 17.36797133717408,
+        "actual_publish_hz": 1.5358050015387663,
+        "publish_duration_ms": {
+          "mean": 636.6954132210526,
+          "p50": 686.606204,
+          "p95": 917.7824647,
+          "p99": 1015.60392652,
+          "maximum": 1043.190287
+        },
+        "arrival_interval_ms": {
+          "mean": 655.9888587608696,
+          "stdev": 215.36475982471887,
+          "p95": 959.3997036500002,
+          "p99": 1172.6202891600003
+        },
+        "arrival_jitter_ms": {
+          "p50": 614.7505900933528,
+          "p95": 901.822455243353,
+          "p99": 1115.0430407533531,
+          "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+        },
+        "arrival_interval_goodput_Bps": 1598466.1720943067,
+        "end_to_end_latency_ms": null,
+        "successful_publish_per_target_second": 1.55,
+        "clock_validated": false,
+        "publisher_exit_reason": "deadline_with_publish_errors",
+        "subscriber_exit_reason": "deadline",
+        "notes": [
+          "Successful-publish delivery alone can hide offered-load reduction.",
+          "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+          "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+          "No E2E latency is computed without verified clock synchronisation.",
+          "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+        ]
+      }
+    },
+    {
+      "sender": "5",
+      "receiver": "10",
+      "clock": {
+        "validated": false,
+        "relative_error_bound_ms": 10.672424999999999,
+        "errors": [],
+        "method": "chrony system correction + root delay/2 + dispersion; selected local reference"
+      },
+      "metrics": {
+        "requested": 1043,
+        "attempted": 95,
+        "publish_succeeded": 93,
+        "publish_failed": 2,
+        "unique_received": 93,
+        "delivery_requested": 0.08916586768935762,
+        "delivery_successful_publish": 1.0,
+        "duplicate_arrivals": 0,
+        "requested_hz": 17.36797133717408,
+        "actual_publish_hz": 1.5358050015387663,
+        "publish_duration_ms": {
+          "mean": 636.6954132210526,
+          "p50": 686.606204,
+          "p95": 917.7824647,
+          "p99": 1015.60392652,
+          "maximum": 1043.190287
+        },
+        "arrival_interval_ms": {
+          "mean": 664.0439666630435,
+          "stdev": 205.73809950853874,
+          "p95": 918.98337055,
+          "p99": 1256.3374334
+        },
+        "arrival_jitter_ms": {
+          "p50": 633.1320080933529,
+          "p95": 861.4061221433528,
+          "p99": 1198.7601849933528,
+          "definition": "abs(consecutive unique arrival interval - requested publish period); includes loss/backpressure"
+        },
+        "arrival_interval_goodput_Bps": 1579076.1645939026,
+        "end_to_end_latency_ms": null,
+        "successful_publish_per_target_second": 1.55,
+        "clock_validated": false,
+        "publisher_exit_reason": "deadline_with_publish_errors",
+        "subscriber_exit_reason": "deadline",
+        "notes": [
+          "Successful-publish delivery alone can hide offered-load reduction.",
+          "Arrival goodput uses (unique arrivals-1)*payload / first-to-last arrival span.",
+          "Interval variability includes loss/backpressure; it is not isolated network jitter.",
+          "No E2E latency is computed without verified clock synchronisation.",
+          "Payload includes the 16-byte sequence header; CDR/RTPS/IP overhead excluded."
+        ]
+      }
+    }
+  ],
+  "published": 170,
+  "received": 340,
+  "goodput_Mbps": 46.36983939429547,
+  "p99_ms": null,
+  "jitter_p99_ms": 1233.8618870490463,
+  "reason": "T3 latency excluded per pair if Wi-Fi clock bound >1ms",
+  "C0_Mbps": {
+    "4": 170.28337784192865,
+    "5": 194.25747107038558
+  },
+  "requested_hz": {
+    "4": 15.224520371132671,
+    "5": 17.36797133717408
+  },
+  "Jain_fairness": 0.9907893976485298,
+  "qdisc_restored": true,
+  "two_reader_budget": "empirical aggregate UDP C0; dynamic predictor failed independent Clean gate; physical airtime and universal model unqualified",
+  "warmup_barrier": {
+    "enabled": true,
+    "ready": {
+      "5": {
+        "ready": true,
+        "wall_ns": 1792042116992471513,
+        "warmup_max_publish_ms": 1068.856035999488,
+        "warmup_publish_calls": 23
+      },
+      "4": {
+        "ready": true,
+        "wall_ns": 1792042117726398541,
+        "warmup_max_publish_ms": 1216.0807620093692,
+        "warmup_publish_calls": 17
+      }
+    },
+    "measurement_start_wall": 1792042124.1847413,
+    "protocol": "10s warmup; wait for both calls to finish; quiet shared 5s start lead; 60s common measurement"
+  },
+  "actual_start_offset_s": {
+    "4": 0.0002453327178955078,
+    "5": 0.000217437744140625
+  },
+  "case_isolation_passed": true,
+  "failure_policy_action": "continue",
+  "artifact_id": "T3_E_fastdds_fixed_r1__a001",
+  "source_artifacts_root": "C:\\Users\\csilab\\Desktop\\DGIST 업무\\26년 1학기\\26년 1학기 DDS 연구\\대용량 데이터 연구 확장\\ROSPacer\\runs\\w2_20261015_resume1\\trials\\T3_E_fastdds_fixed_r1__a001",
+  "executed_row": {
+    "id": "T3_E_fastdds_fixed_r1__a001",
+    "stage": "T3_E",
+    "topology": "T3",
+    "condition": "E",
+    "rho": 1.5,
+    "mode": "fixed",
+    "rmw": "fastdds",
+    "rep": 1,
+    "seconds": 60,
+    "warmup": 10,
+    "drain": 30,
+    "payload": 1048576,
+    "intent": "complete",
+    "planned_id": "T3_E_fastdds_fixed_r1",
+    "attempt_number": 1
+  },
+  "attempt_number": 1,
+  "orchestration_elapsed_s": 277.8599999998696,
+  "backup_note": "Compact archived summary. Original sequence arrays are in results.json; full raw artifacts remain in local ignored runs/. source_artifacts_root is historical provenance, not a portable path."
+}

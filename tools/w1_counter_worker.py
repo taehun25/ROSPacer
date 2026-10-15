@@ -27,6 +27,13 @@ def snapshot(dev):
         m=re.search(re.escape(name)+r':\s*([\d.]+) MBit/s',r['station']['stdout'])
         if m:r['counters'][key]=float(m[1])*1e6
     r['netdev']={k:int((Path('/sys/class/net')/dev/'statistics'/k).read_text()) for k in ['tx_bytes','rx_bytes','tx_packets','rx_packets','tx_dropped','rx_dropped']}
+    r['low_level']={}
+    phy=(Path('/sys/class/net')/dev/'phy80211').resolve().name
+    stats=Path('/sys/kernel/debug/ieee80211')/phy/'statistics'
+    for name in ['dot11FCSErrorCount','dot11ACKFailureCount','dot11RTSFailureCount']:
+        path=stats/name
+        try:r['low_level'][name]=int(path.read_text().strip())
+        except (OSError,ValueError):r['low_level'][name]=None
     reader=Path(__file__).with_name('w1_etstats')
     if reader.exists():
         q=subprocess.run([str(reader),dev],capture_output=True,text=True,timeout=4)
